@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --rig-green: #0adc6a;
+  --rig-navy: #323e48;
+  --rig-navy-deep: #222b32;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+body {
+  @apply bg-white text-rig-navy antialiased;
+}
+
+@layer components {
+  .container-rig {
+    @apply mx-auto w-full max-w-content px-6 lg:px-8;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-rig-green px-6 py-3 text-sm font-semibold text-rig-navy-deep shadow-sm transition hover:bg-rig-green-dark hover:shadow-md;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-full border border-rig-navy/20 px-6 py-3 text-sm font-semibold text-rig-navy transition hover:border-rig-navy/40 hover:bg-rig-navy/5;
+  }
+
+  .btn-on-dark {
+    @apply inline-flex items-center justify-center rounded-full border border-white/25 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10;
+  }
+
+  .eyebrow {
+    @apply text-sm font-semibold uppercase tracking-wider text-rig-green-dark;
+  }
+
+  .section-title {
+    @apply mt-3 text-3xl font-bold tracking-tight text-rig-navy sm:text-4xl;
+  }
+}

@@ -1,0 +1,164 @@
+// Central copy for the marketing site. Edit text here — components read from this file.
+
+export const brand = {
+  name: 'Rig',
+  product: 'Rig Fleet',
+  demoUrl: 'https://fleet.bigrig.app',
+  contactEmail: 'hello@bigrig.app',
+}
+
+export const nav = {
+  links: [
+    { label: 'Fleets', href: '/' },
+    { label: 'Owner Operators', href: '/owner-operators' },
+    { label: 'Shops', href: '/shops' },
+  ],
+  cta: { label: 'Book a demo', href: '/#demo' },
+}
+
+export const hero = {
+  eyebrow: 'Built for fleets',
+  title: 'The execution layer for fleet maintenance.',
+  subtitle:
+    'Rig covers the entire execution path — from booking and payment to fulfillment, proof of service, and verification. End-to-end execution for every breakdown and every repair, handled and documented in one place.',
+  primaryCta: { label: 'Book a demo', href: '#demo' },
+  secondaryCta: { label: 'See how it works', href: '#how-it-works' },
+  // `dispatch` and `trucks` are overridden by live backend data (see HeroStats);
+  // `static` values (e.g. network size) are not. Values here are the fallback.
+  stats: [
+    { key: 'dispatch', value: '13.3 min', label: 'avg. time to dispatch' },
+    { key: 'trucks', value: '2,951+', label: 'services executed end-to-end' },
+    { key: 'static', value: '6,000+', label: 'mechanics nationwide' },
+  ],
+}
+
+// Real performance benchmarks shown on fleet.bigrig.app (fleet-metrics).
+// Source: rig-web-app/pages/fleet-metrics-pdf.tsx
+export const serviceStats = {
+  eyebrow: 'By the numbers',
+  title: 'Faster, cheaper, more competitive than the industry.',
+  subtitle: 'The same metrics fleet managers see on their Rig dashboard.',
+  // Static fallback shown until live data loads (and if the backend is unreachable).
+  metrics: [
+    { label: 'Avg. time to dispatch', rig: '13.3 min', industry: '37 min', delta: '2.8× faster' },
+    { label: 'Avg. cost of road service', rig: '$460', industry: '$650', delta: '29% cheaper' },
+    { label: 'Avg. time to arrive', rig: '39 min', industry: '60 min', delta: '35% faster' },
+  ],
+  trucksServiced: '2,951',
+  servicingSince: 'August 24, 2022',
+}
+
+export const executionFlow = {
+  eyebrow: 'How it works',
+  title: 'One system from breakdown to record of work.',
+  subtitle:
+    'Most tools stop at alerting you that a unit is down. Rig executes the response — and writes it all down. Next, it decides the move for you.',
+  executionLabel: 'The execution layer',
+  executionStatus: 'Live today',
+  steps: [
+    {
+      step: '01',
+      key: 'booking',
+      title: 'Booking',
+      copy: 'A driver or dispatcher requests service in seconds. Rig instantly notifies your internal mechanics and our nationwide network — and fires off AI calling agents to pull competitive bids from national service providers. No phone-tag, no waiting.',
+      bullets: [
+        'Notifies your internal fleet mechanics first',
+        'Broadcasts to Rig’s nationwide network of mechanics',
+        'AI calling agents bring in bids from national service providers',
+      ],
+    },
+    {
+      step: '02',
+      key: 'payment',
+      title: 'Payment',
+      copy: 'Authorize, approve, and settle in-platform. No card read over the phone, no surprise invoices — pricing and approvals happen before the wrench turns.',
+      bullets: ['In-app authorization & settlement', 'Approval controls for fleet managers', 'Transparent line-item pricing'],
+    },
+    {
+      step: '03',
+      key: 'fulfillment',
+      title: 'Fulfillment',
+      copy: 'Everyone sees the same live status. Driver, dispatcher, and shop stay in sync from ETA to wheels-rolling, so no one is left guessing.',
+      bullets: ['Real-time status to all parties', 'ETA, on-site, and completion updates', 'Built-in messaging across the job'],
+    },
+    {
+      step: '04',
+      key: 'documentation',
+      title: 'Documentation',
+      copy: 'Every breakdown and repair is captured to the unit’s history automatically — what failed, what was done, what it cost. Clean records for compliance and the next decision.',
+      bullets: ['Repair orders attached to each unit', 'Full breakdown & maintenance history', 'Export-ready for compliance and audits'],
+    },
+  ],
+  // The decision layer sits on top of execution — not yet live.
+  decisionLayer: {
+    badge: 'Coming soon',
+    label: 'The decision layer',
+    title: 'Soon, Rig decides the next move — not just executes it.',
+    copy: 'Built on every booking, payment, repair, and record, Rig’s decision layer turns execution data into action: when a unit goes down, it decides where it’s routed, calls the shop, opens the claim, and reports what was done.',
+    bullets: [
+      'Auto-route each breakdown to the right shop or mechanic',
+      'Trigger calls, bookings, and approvals automatically',
+      'Turn breakdown & maintenance history into repair-or-replace and preventive recommendations',
+    ],
+  },
+}
+
+export const differentiators = {
+  eyebrow: 'Why Rig',
+  title: 'Built to execute, not just to alert.',
+  items: [
+    {
+      title: 'Real-time across every party',
+      copy: 'Driver, dispatcher, and shop work from one live source of truth — no status calls, no stale spreadsheets.',
+    },
+    {
+      title: 'Connected to your stack',
+      copy: 'Pairs with the telematics you already run so breakdowns and maintenance flow into the systems your team uses.',
+    },
+    {
+      title: 'Documentation by default',
+      copy: 'Every job writes itself to the unit’s history — what failed, what was done, what it cost — with zero extra paperwork.',
+    },
+    {
+      title: 'Nationwide network',
+      copy: 'A coast-to-coast network of 6,000+ vetted mechanics and shops, so coverage is never the reason a unit sits.',
+    },
+  ],
+}
+
+export const featureStatus = {
+  eyebrow: 'Feature status',
+  title: 'What’s live today, and what’s rolling out.',
+  subtitle:
+    'We ship in the open. Here’s what you can use right now and what’s landing next.',
+}
+
+export const finalCta = {
+  eyebrow: 'Get started',
+  title: 'See Rig run a breakdown end to end.',
+  subtitle:
+    'Book a walkthrough and we’ll show you the full execution path — booking, payment, fulfillment, and documentation — on your fleet’s terms.',
+  cta: { label: 'Book a demo', href: 'mailto:hello@bigrig.app?subject=Rig%20Fleet%20demo' },
+}
+
+export const footer = {
+  tagline: 'The execution layer for fleet maintenance.',
+  columns: [
+    {
+      title: 'Product',
+      links: [
+        { label: 'How it works', href: '#how-it-works' },
+        { label: 'Why Rig', href: '#why-rig' },
+        { label: 'Feature status', href: '#status' },
+        { label: 'Fleet dashboard', href: 'https://fleet.bigrig.app' },
+      ],
+    },
+    {
+      title: 'Company',
+      links: [
+        { label: 'bigrig.app', href: 'https://www.bigrig.app' },
+        { label: 'Contact', href: 'mailto:hello@bigrig.app' },
+      ],
+    },
+  ],
+}

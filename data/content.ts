@@ -114,10 +114,11 @@ export const executionFlow = {
 export const customIntegrations = {
   eyebrow: 'Custom integrations',
   title: 'We fit into your systems — not the other way around.',
-  copy: 'Whatever your processes, dispatch tools, or telematics, Rig works hand-in-hand with your team to integrate our execution layer into your stack — so dispatching, payment, fulfillment, and documentation flow through the systems you already use, as seamlessly as possible.',
+  copy: 'Whatever your processes, dispatch tools, or telematics, Rig works hand-in-hand with your team to integrate our execution layer into your stack — from Slack alerts to enterprise maintenance systems like IBM Maximo — so dispatching, payment, fulfillment, and documentation flow through the systems you already use, as seamlessly as possible.',
   bullets: [
     'Built around your existing processes and workflows',
-    'Connects to the dispatch and telematics tools you already run',
+    'Connects to the tools you already run — Slack, telematics, and dispatch',
+    'Syncs with enterprise maintenance systems like IBM Maximo',
     'Hands-on onboarding and tailored integration from the Rig team',
   ],
 }

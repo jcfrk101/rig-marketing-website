@@ -2,7 +2,7 @@ import { differentiators } from '@/data/content'
 
 export default function Differentiators() {
   return (
-    <section id="why-rig" className="bg-rig-navy py-24 text-white">
+    <section id="why-rig" className="bg-rig-navy py-16 text-white sm:py-24">
       <div className="container-rig">
         <div className="max-w-2xl">
           <p className="text-sm font-semibold uppercase tracking-wider text-rig-green">{differentiators.eyebrow}</p>

@@ -6,7 +6,7 @@ interface FeatureCardsProps {
 
 export default function FeatureCards({ eyebrow, title, items }: FeatureCardsProps) {
   return (
-    <section className="bg-white py-24">
+    <section className="bg-white py-16 sm:py-24">
       <div className="container-rig">
         <div className="max-w-2xl">
           <p className="eyebrow">{eyebrow}</p>

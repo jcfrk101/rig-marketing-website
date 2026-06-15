@@ -10,7 +10,7 @@ export default function Hero() {
         aria-hidden
         className="pointer-events-none absolute -right-32 -top-32 h-[480px] w-[480px] rounded-full bg-rig-green/20 blur-3xl"
       />
-      <div className="container-rig relative grid gap-12 py-20 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:py-28">
+      <div className="container-rig relative grid gap-10 py-16 sm:py-20 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:py-28">
         <div>
           <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rig-green">
             <span className="h-1.5 w-1.5 rounded-full bg-rig-green" />
@@ -23,11 +23,16 @@ export default function Hero() {
 
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70">{hero.subtitle}</p>
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a href={hero.primaryCta.href} className="btn-primary">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <a
+              href={hero.primaryCta.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary w-full sm:w-auto"
+            >
               {hero.primaryCta.label}
             </a>
-            <a href={hero.secondaryCta.href} className="btn-on-dark">
+            <a href={hero.secondaryCta.href} className="btn-on-dark w-full sm:w-auto">
               {hero.secondaryCta.label}
             </a>
           </div>

@@ -2,7 +2,7 @@ import { finalCta } from '@/data/content'
 
 export default function CTASection() {
   return (
-    <section id="demo" className="bg-white py-24">
+    <section id="demo" className="bg-white py-16 sm:py-24">
       <div className="container-rig">
         <div className="relative overflow-hidden rounded-3xl bg-rig-navy-deep px-8 py-16 text-center text-white sm:px-16">
           <div
@@ -14,7 +14,12 @@ export default function CTASection() {
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{finalCta.title}</h2>
             <p className="mt-4 text-lg text-white/70">{finalCta.subtitle}</p>
             <div className="mt-8">
-              <a href={finalCta.cta.href} className="btn-primary">
+              <a
+                href={finalCta.cta.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary"
+              >
                 {finalCta.cta.label}
               </a>
             </div>

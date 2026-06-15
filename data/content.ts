@@ -13,15 +13,15 @@ export const nav = {
     { label: 'Owner Operators', href: '/owner-operators' },
     { label: 'Shops', href: '/shops' },
   ],
-  cta: { label: 'Book a demo', href: '/#demo' },
+  cta: { label: 'Book a demo', href: 'https://calendly.com/d/cw76-3bd-26v/demos' },
 }
 
 export const hero = {
   eyebrow: 'Built for fleets',
   title: 'The execution layer for fleet maintenance.',
   subtitle:
-    'Rig covers the entire execution path — from booking and payment to fulfillment, proof of service, and verification. End-to-end execution for every breakdown and every repair, handled and documented in one place.',
-  primaryCta: { label: 'Book a demo', href: '#demo' },
+    'Rig covers the entire execution path — from dispatching and payment to fulfillment, proof of service, and verification. End-to-end execution for every breakdown and all maintenance, handled and documented in one place.',
+  primaryCta: { label: 'Book a demo', href: 'https://calendly.com/d/cw76-3bd-26v/demos' },
   secondaryCta: { label: 'See how it works', href: '#how-it-works' },
   // `dispatch` and `trucks` are overridden by live backend data (see HeroStats);
   // `static` values (e.g. network size) are not. Values here are the fallback.
@@ -58,8 +58,9 @@ export const executionFlow = {
   steps: [
     {
       step: '01',
-      key: 'booking',
-      title: 'Booking',
+      key: 'dispatching',
+      title: 'Dispatching',
+      summary: 'Notify internal mechanics and the network, and let AI agents pull competitive bids.',
       copy: 'A driver or dispatcher requests service in seconds. Rig instantly notifies your internal mechanics and our nationwide network — and fires off AI calling agents to pull competitive bids from national service providers. No phone-tag, no waiting.',
       bullets: [
         'Notifies your internal fleet mechanics first',
@@ -71,13 +72,19 @@ export const executionFlow = {
       step: '02',
       key: 'payment',
       title: 'Payment',
-      copy: 'Authorize, approve, and settle in-platform. No card read over the phone, no surprise invoices — pricing and approvals happen before the wrench turns.',
-      bullets: ['In-app authorization & settlement', 'Approval controls for fleet managers', 'Transparent line-item pricing'],
+      summary: 'Approve pricing and pay by card, WEX Express Code, or T-Chek.',
+      copy: 'Authorize, approve, and settle in-platform. A pre-authorization hold confirms funds and payment only processes once service is complete — no card read over the phone, no surprise invoices.',
+      bullets: [
+        'Pay by credit card, WEX Express Code, or T-Chek',
+        'Pre-authorization hold — charged only after service',
+        'Approval controls and transparent line-item pricing',
+      ],
     },
     {
       step: '03',
       key: 'fulfillment',
       title: 'Fulfillment',
+      summary: 'Driver, dispatcher, and shop track the repair from one live status.',
       copy: 'Everyone sees the same live status. Driver, dispatcher, and shop stay in sync from ETA to wheels-rolling, so no one is left guessing.',
       bullets: ['Real-time status to all parties', 'ETA, on-site, and completion updates', 'Built-in messaging across the job'],
     },
@@ -85,6 +92,7 @@ export const executionFlow = {
       step: '04',
       key: 'documentation',
       title: 'Documentation',
+      summary: 'Every breakdown and repair is logged to the unit’s history automatically.',
       copy: 'Every breakdown and repair is captured to the unit’s history automatically — what failed, what was done, what it cost. Clean records for compliance and the next decision.',
       bullets: ['Repair orders attached to each unit', 'Full breakdown & maintenance history', 'Export-ready for compliance and audits'],
     },
@@ -94,13 +102,24 @@ export const executionFlow = {
     badge: 'Coming soon',
     label: 'The decision layer',
     title: 'Soon, Rig decides the next move — not just executes it.',
-    copy: 'Built on every booking, payment, repair, and record, Rig’s decision layer turns execution data into action: when a unit goes down, it decides where it’s routed, calls the shop, opens the claim, and reports what was done.',
+    copy: 'Built on every dispatch, payment, repair, and record, Rig’s decision layer turns execution data into action: when a unit goes down, it decides where it’s routed, calls the shop, opens the claim, and reports what was done.',
     bullets: [
       'Auto-route each breakdown to the right shop or mechanic',
-      'Trigger calls, bookings, and approvals automatically',
+      'Trigger calls, appointments, and approvals automatically',
       'Turn breakdown & maintenance history into repair-or-replace and preventive recommendations',
     ],
   },
+}
+
+export const customIntegrations = {
+  eyebrow: 'Custom integrations',
+  title: 'We fit into your systems — not the other way around.',
+  copy: 'Whatever your processes, dispatch tools, or telematics, Rig works hand-in-hand with your team to integrate our execution layer into your stack — so dispatching, payment, fulfillment, and documentation flow through the systems you already use, as seamlessly as possible.',
+  bullets: [
+    'Built around your existing processes and workflows',
+    'Connects to the dispatch and telematics tools you already run',
+    'Hands-on onboarding and tailored integration from the Rig team',
+  ],
 }
 
 export const differentiators = {
@@ -137,8 +156,8 @@ export const finalCta = {
   eyebrow: 'Get started',
   title: 'See Rig run a breakdown end to end.',
   subtitle:
-    'Book a walkthrough and we’ll show you the full execution path — booking, payment, fulfillment, and documentation — on your fleet’s terms.',
-  cta: { label: 'Book a demo', href: 'mailto:hello@bigrig.app?subject=Rig%20Fleet%20demo' },
+    'Book a walkthrough and we’ll show you the full execution path — dispatching, payment, fulfillment, and documentation — on your fleet’s terms.',
+  cta: { label: 'Book a demo', href: 'https://calendly.com/d/cw76-3bd-26v/demos' },
 }
 
 export const footer = {

@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'RIG App',
     description:
-      'Booking to payment to fulfillment to documentation. Rig executes the whole breakdown response so your fleet keeps moving.',
+      'Dispatching to payment to fulfillment to documentation. Rig executes the whole breakdown response so your fleet keeps moving.',
     type: 'website',
   },
 }

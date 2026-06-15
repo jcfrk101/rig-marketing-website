@@ -25,7 +25,7 @@ interface AppCTAProps {
 
 export default function AppCTA({ eyebrow, title, subtitle, appLinks }: AppCTAProps) {
   return (
-    <section id="demo" className="bg-white py-24">
+    <section id="demo" className="bg-white py-16 sm:py-24">
       <div className="container-rig">
         <div className="relative overflow-hidden rounded-3xl bg-rig-navy-deep px-8 py-16 text-center text-white sm:px-16">
           <div

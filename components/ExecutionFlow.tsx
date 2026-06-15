@@ -1,11 +1,11 @@
-import FlowStep from './FlowStep'
-import { executionFlow } from '@/data/content'
+import ExecutionSteps from './ExecutionSteps'
+import { executionFlow, customIntegrations as ci } from '@/data/content'
 
 const dl = executionFlow.decisionLayer
 
 export default function ExecutionFlow() {
   return (
-    <section id="how-it-works" className="bg-white py-24">
+    <section id="how-it-works" className="bg-white py-16 sm:py-24">
       <div className="container-rig">
         <div className="max-w-2xl">
           <p className="eyebrow">{executionFlow.eyebrow}</p>
@@ -24,22 +24,34 @@ export default function ExecutionFlow() {
           </span>
         </div>
 
-        <div className="mt-10 space-y-20">
-          {executionFlow.steps.map((s, i) => (
-            <FlowStep
-              key={s.key}
-              step={s.step}
-              stageKey={s.key as 'booking' | 'payment' | 'fulfillment' | 'documentation'}
-              title={s.title}
-              copy={s.copy}
-              bullets={s.bullets}
-              reverse={i % 2 === 1}
-            />
-          ))}
+        <ExecutionSteps />
+
+        {/* Custom integrations */}
+        <div className="mt-14 rounded-3xl border border-rig-navy/10 bg-rig-navy/[0.03] p-6 sm:mt-20 sm:p-12">
+          <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+            <div>
+              <p className="eyebrow">{ci.eyebrow}</p>
+              <h3 className="mt-3 text-2xl font-bold tracking-tight text-rig-navy sm:text-3xl">{ci.title}</h3>
+              <p className="mt-4 text-base leading-relaxed text-rig-navy/70">{ci.copy}</p>
+            </div>
+            <ul className="grid gap-3 sm:grid-cols-1">
+              {ci.bullets.map((b) => (
+                <li
+                  key={b}
+                  className="flex items-start gap-3 rounded-xl border border-rig-navy/10 bg-white p-4 text-sm text-rig-navy/80"
+                >
+                  <span className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-rig-green text-[10px] font-bold text-rig-navy-deep">
+                    ✓
+                  </span>
+                  {b}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         {/* Decision layer — coming soon */}
-        <div className="relative mt-20 overflow-hidden rounded-3xl border border-rig-green/20 bg-rig-navy-deep p-8 text-white sm:p-12">
+        <div className="relative mt-14 overflow-hidden rounded-3xl border border-rig-green/20 bg-rig-navy-deep p-6 text-white sm:mt-20 sm:p-12">
           <div
             aria-hidden
             className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-rig-green/20 blur-3xl"

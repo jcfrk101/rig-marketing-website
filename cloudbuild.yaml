@@ -1,0 +1,54 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: Build
+    args:
+      - '-c'
+      - |
+        docker build --no-cache \
+        -t $_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA \
+        --build-arg NEXT_PUBLIC_API_URL=$_API_URL \
+        . \
+        -f Dockerfile
+    entrypoint: bash
+    timeout: 1800s
+  - name: gcr.io/cloud-builders/docker
+    id: Push
+    args:
+      - push
+      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: Deploy
+    args:
+      - '-c'
+      - |
+        gcloud run services update $_SERVICE_NAME \
+        --platform=managed \
+        --image=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA \
+        --labels=commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID \
+        --region=$_DEPLOY_REGION \
+        --memory=512Mi \
+        --cpu=1 \
+        --min-instances=1 \
+        --quiet && \
+        gcloud run services add-iam-policy-binding $_SERVICE_NAME \
+        --platform=managed \
+        --region=$_DEPLOY_REGION \
+        --member="allUsers" \
+        --role="roles/run.invoker" \
+        --quiet
+    entrypoint: bash
+images:
+  - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+options:
+  substitutionOption: ALLOW_LOOSE
+  logging: CLOUD_LOGGING_ONLY
+substitutions:
+  _DEPLOY_REGION: us-central1
+  _GCR_HOSTNAME: us.gcr.io
+  _PLATFORM: managed
+  _SERVICE_NAME: rig-marketing-website
+  _API_URL: https://api.bigrig.app
+  _NEXT_PUBLIC_API_URL: https://api.bigrig.app
+tags:
+  - rig-marketing-website
+timeout: 3600s

@@ -33,10 +33,10 @@ export default function HeroStats({ stats }: { stats: HeroStat[] }) {
   }
 
   return (
-    <dl className="mt-12 grid max-w-lg grid-cols-3 gap-6 border-t border-white/10 pt-8">
+    <dl className="mt-10 grid max-w-lg grid-cols-3 gap-4 border-t border-white/10 pt-8 sm:gap-6">
       {stats.map((stat) => (
         <div key={stat.label}>
-          <dt className="text-xl font-bold text-rig-green">{valueFor(stat)}</dt>
+          <dt className="text-lg font-bold text-rig-green sm:text-xl">{valueFor(stat)}</dt>
           <dd className="mt-1 text-xs text-white/50">{stat.label}</dd>
         </div>
       ))}

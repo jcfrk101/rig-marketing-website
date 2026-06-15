@@ -34,7 +34,7 @@ export default function FeatureStatus() {
   const rolling = features.filter((f) => f.status === 'rolling-out')
 
   return (
-    <section id="status" className="bg-rig-navy/[0.03] py-24">
+    <section id="status" className="bg-rig-navy/[0.03] py-16 sm:py-24">
       <div className="container-rig">
         <div className="max-w-2xl">
           <p className="eyebrow">{featureStatus.eyebrow}</p>

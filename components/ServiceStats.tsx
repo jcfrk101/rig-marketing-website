@@ -42,7 +42,7 @@ export default function ServiceStats() {
   }, [])
 
   return (
-    <section className="bg-white py-20">
+    <section className="bg-white py-16 sm:py-20">
       <div className="container-rig">
         <div className="max-w-2xl">
           <p className="eyebrow">{serviceStats.eyebrow}</p>

@@ -9,7 +9,7 @@ export interface Feature {
   description: string
   status: FeatureState
   // Which stage of the execution flow this maps to (for visual grouping/labels).
-  stage: 'Booking' | 'Payment' | 'Fulfillment' | 'Documentation' | 'Platform'
+  stage: 'Dispatching' | 'Payment' | 'Fulfillment' | 'Documentation' | 'Platform'
 }
 
 export const features: Feature[] = [
@@ -17,7 +17,7 @@ export const features: Feature[] = [
   {
     name: 'Execution Layer',
     description:
-      'Booking, payment, fulfillment, and documentation — the full breakdown response, executed and recorded end-to-end in one place.',
+      'Dispatching, payment, fulfillment, and documentation — the full breakdown response, executed and recorded end-to-end in one place.',
     status: 'live',
     stage: 'Platform',
   },
@@ -45,19 +45,19 @@ export const features: Feature[] = [
     name: 'Preventive maintenance scheduling',
     description: 'Schedule and track recurring service before units go down.',
     status: 'rolling-out',
-    stage: 'Booking',
+    stage: 'Dispatching',
   },
   {
     name: 'AI Agent Calling Swarms',
     description: 'AI calling agents work the phones in parallel to pull competitive bids from national service providers.',
     status: 'rolling-out',
-    stage: 'Booking',
+    stage: 'Dispatching',
   },
   {
     name: 'Fleet Internal Mechanic Dispatch',
     description: 'Route jobs to your own in-house mechanics before going to the network.',
     status: 'rolling-out',
-    stage: 'Booking',
+    stage: 'Dispatching',
   },
   {
     name: 'Driver Mobile App with PTI Reports',

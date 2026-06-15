@@ -1,6 +1,6 @@
 // Compact per-stage mockups for the execution flow. One switch keeps them co-located.
 
-type Stage = 'booking' | 'payment' | 'fulfillment' | 'documentation'
+type Stage = 'dispatching' | 'payment' | 'fulfillment' | 'documentation'
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
@@ -10,25 +10,38 @@ function Card({ children }: { children: React.ReactNode }) {
   )
 }
 
-function Booking() {
+function Dispatching() {
+  const offers = [
+    { name: 'Estarino', price: '$620.52', dist: '51.5 mi to service point', eta: '60 min', rate: '$140/hr · After hrs $280/hr' },
+    { name: 'Avtar Barring', price: '$796.99', dist: '68.5 mi to service point', eta: '1h 35m', rate: '$175/hr · After hrs $175/hr' },
+  ]
   return (
     <Card>
-      <div className="mb-3 text-[10px] font-semibold uppercase tracking-wide text-rig-navy/50">New request</div>
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-rig-navy/50">Offers · Dispatcher</span>
+        <span className="rounded-full bg-rig-green/15 px-1.5 py-0.5 text-[9px] font-bold text-rig-green-dark">2 bids in</span>
+      </div>
       <div className="space-y-2">
-        {['Tire', 'Tow', 'Service'].map((t, i) => (
-          <div
-            key={t}
-            className={`flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium ${
-              i === 0 ? 'bg-rig-green/15 text-rig-green-dark ring-1 ring-rig-green/40' : 'bg-rig-navy/[0.03] text-rig-navy/70'
-            }`}
-          >
-            {t}
-            {i === 0 && <span className="text-[10px]">✓ Routed</span>}
+        {offers.map((o) => (
+          <div key={o.name} className="rounded-lg bg-rig-navy/[0.03] px-3 py-2">
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-semibold text-rig-navy">{o.name}</span>
+              <span className="text-xs font-bold text-rig-navy">{o.price}</span>
+            </div>
+            <div className="mt-0.5 flex items-center justify-between text-[10px] text-rig-navy/50">
+              <span>{o.dist}</span>
+              <span>{o.eta}</span>
+            </div>
+            <div className="mt-0.5 text-[10px] text-rig-navy/45">{o.rate}</div>
           </div>
         ))}
       </div>
-      <div className="mt-3 rounded-lg bg-rig-navy-deep px-3 py-2 text-center text-[11px] font-semibold text-white">
-        Provider confirmed · 22 min ETA
+      <div className="mt-3 flex items-center gap-2 rounded-lg bg-rig-navy-deep px-3 py-2">
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rig-green opacity-75" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-rig-green" />
+        </span>
+        <span className="text-[10px] font-semibold text-white">AI agents calling — 5 more providers</span>
       </div>
     </Card>
   )
@@ -37,25 +50,42 @@ function Booking() {
 function Payment() {
   return (
     <Card>
-      <div className="mb-3 text-[10px] font-semibold uppercase tracking-wide text-rig-navy/50">Approval</div>
-      <div className="space-y-2 text-xs">
+      <p className="mb-3 text-[10px] leading-relaxed text-rig-navy/55">
+        A pre-authorization hold confirms funds. Payment is only processed once service is complete.
+      </p>
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-rig-navy/50">Offer components</div>
+      <div className="space-y-1.5 text-xs">
         {[
-          ['Diagnostic', '$95.00'],
-          ['Parts', '$240.00'],
-          ['Labor (1.5h)', '$180.00'],
-        ].map(([k, v]) => (
-          <div key={k} className="flex justify-between text-rig-navy/70">
-            <span>{k}</span>
-            <span className="font-medium text-rig-navy">{v}</span>
+          ['Mobile Service (labor)', '$1,475.00'],
+          ['Parts', '$890.32'],
+          ['Diagnostic fee', '$150.00'],
+          ['Previous Payments', '-$2,216.00'],
+        ].map(([label, value]) => (
+          <div key={label} className="flex justify-between rounded-lg bg-rig-navy/[0.03] px-3 py-1.5">
+            <span className="text-rig-navy/70">{label}</span>
+            <span className="font-medium text-rig-navy">{value}</span>
           </div>
         ))}
-        <div className="flex justify-between border-t border-rig-navy/10 pt-2 font-bold text-rig-navy">
+        <div className="flex justify-between px-3 pt-1 font-bold text-rig-navy">
           <span>Total</span>
-          <span>$515.00</span>
+          <span>$299.32</span>
         </div>
       </div>
+
+      <div className="mb-2 mt-3 text-[10px] font-semibold uppercase tracking-wide text-rig-navy/50">Pay with</div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-lg border-2 border-rig-green bg-rig-green/5 px-2 py-2 text-center">
+          <div className="text-xs font-bold text-rig-green-dark">Card</div>
+          <div className="text-[9px] text-rig-navy/50">via Stripe</div>
+        </div>
+        <div className="rounded-lg border border-rig-navy/15 px-2 py-2 text-center">
+          <div className="text-xs font-bold text-rig-navy">WEX</div>
+          <div className="text-[9px] text-rig-navy/50">Express Code or T-Chek</div>
+        </div>
+      </div>
+
       <div className="mt-3 rounded-lg bg-rig-green px-3 py-2 text-center text-[11px] font-bold text-rig-navy-deep">
-        Approve & authorize
+        Continue
       </div>
     </Card>
   )
@@ -112,8 +142,8 @@ function Documentation() {
 
 export default function StageMockup({ stage }: { stage: Stage }) {
   switch (stage) {
-    case 'booking':
-      return <Booking />
+    case 'dispatching':
+      return <Dispatching />
     case 'payment':
       return <Payment />
     case 'fulfillment':

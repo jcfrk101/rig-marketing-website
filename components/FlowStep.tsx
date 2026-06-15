@@ -2,7 +2,7 @@ import StageMockup from './mockups/StageMockup'
 
 interface FlowStepProps {
   step: string
-  stageKey: 'booking' | 'payment' | 'fulfillment' | 'documentation'
+  stageKey: 'dispatching' | 'payment' | 'fulfillment' | 'documentation'
   title: string
   copy: string
   bullets: string[]

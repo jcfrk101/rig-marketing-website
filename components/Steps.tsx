@@ -6,7 +6,7 @@ interface StepsProps {
 
 export default function Steps({ eyebrow, title, items }: StepsProps) {
   return (
-    <section className="bg-rig-navy/[0.03] py-24">
+    <section className="bg-rig-navy/[0.03] py-16 sm:py-24">
       <div className="container-rig">
         <div className="max-w-2xl">
           <p className="eyebrow">{eyebrow}</p>

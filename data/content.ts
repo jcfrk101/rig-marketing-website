@@ -32,6 +32,43 @@ export const hero = {
   ],
 }
 
+// Nationwide network coverage — sits above the "By the numbers" section.
+export const networkCoverage = {
+  eyebrow: 'Nationwide network',
+  title: 'A network deep enough that coverage is never the reason a unit sits.',
+  subtitle:
+    'Rig connects fleets to a coast-to-coast network of vetted mechanics and shops. Every dot is a service provider ready to take a job — across 48 states, from major freight corridors to the last mile.',
+  stats: [
+    { value: '6,000+', label: 'mechanics & shops nationwide' },
+    { value: '48', label: 'states covered' },
+    { value: 'Coast to coast', label: 'major corridors to the last mile' },
+  ],
+  mapCaption: 'Each dot is a mechanic or shop in the Rig network.',
+  bidding: {
+    eyebrow: 'Mechanics bid through the app',
+    title: 'Providers compete for the job — in real time, in the Rig app.',
+    copy: 'When a unit goes down, network mechanics set their price and ETA and send an offer straight from the Rig mechanic app. Fleets see competing bids side by side instead of cold-calling shops one at a time.',
+    points: [
+      {
+        title: 'Cuts response time',
+        copy: 'Offers come back in minutes — callout fee, mileage, and a live ETA — so dispatchers approve and get rolling instead of working the phones.',
+      },
+      {
+        title: 'More market depth',
+        copy: 'A dense network means multiple providers can bid on the same breakdown, even in remote areas where a fleet might otherwise have one option — or none.',
+      },
+      {
+        title: 'More options for fleets',
+        copy: 'Compare price, ETA, and rates across providers and pick what fits the unit and the urgency — full service or a quick callout.',
+      },
+    ],
+    shots: [
+      { src: '/mechanic-pricing.png', alt: 'Mechanic setting callout fee, mileage, and prep time in the Rig app', caption: 'Set price & ETA' },
+      { src: '/mechanic-confirmation.png', alt: 'Mechanic confirming the offer with total and ETA before sending', caption: 'Send the offer' },
+    ],
+  },
+}
+
 // Real performance benchmarks shown on fleet.bigrig.app (fleet-metrics).
 // Source: rig-web-app/pages/fleet-metrics-pdf.tsx
 export const serviceStats = {

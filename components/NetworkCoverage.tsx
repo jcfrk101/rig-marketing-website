@@ -1,4 +1,5 @@
 import { networkCoverage } from '@/data/content'
+import NetworkPlot from '@/components/NetworkPlot'
 
 // Thin phone frame so the mechanic-app screenshots read as a real device.
 function Phone({ src, alt, caption, className = '' }: { src: string; alt: string; caption: string; className?: string }) {
@@ -31,14 +32,10 @@ export default function NetworkCoverage() {
           <p className="mt-4 text-lg leading-relaxed text-white/65">{subtitle}</p>
         </div>
 
-        {/* Coverage map — North America outlined in white, flush on the section background, with green network pins */}
+        {/* Coverage map — a raw scatter of every provider location. No basemap: the density of real
+            points alone traces the continental US. */}
         <div className="relative mt-12">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/network-map-usa-v5.png"
-            alt="Map of the United States and southern Canada dotted with thousands of Rig network mechanics and shops"
-            className="block w-full"
-          />
+          <NetworkPlot />
           <span className="absolute bottom-3 left-3 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-medium text-white/80 backdrop-blur-sm">
             {mapCaption}
           </span>

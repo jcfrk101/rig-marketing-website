@@ -1,3 +1,7 @@
+# Production deploy for the marketing website.
+# Fires only on tags matching `prod-deploy-v*` via the `prod-rig-marketing-website`
+# trigger in the rig-production-337414 GCP project. Points the site at the
+# production API (api.bigrig.app).
 steps:
   - name: gcr.io/cloud-builders/docker
     id: Build
@@ -48,7 +52,6 @@ substitutions:
   _PLATFORM: managed
   _SERVICE_NAME: rig-marketing-website
   _API_URL: https://api.bigrig.app
-  _NEXT_PUBLIC_API_URL: https://api.bigrig.app
 tags:
   - rig-marketing-website
 timeout: 3600s

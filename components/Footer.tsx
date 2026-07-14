@@ -11,7 +11,7 @@ export default function Footer() {
           <p className="mt-4 max-w-xs text-sm text-white/60">{footer.tagline}</p>
           <a
             href={footer.phone.href}
-            className="mt-4 inline-block text-sm font-semibold text-rig-green transition hover:text-white"
+            className="mt-3 inline-block py-1.5 text-sm font-semibold text-rig-green transition hover:text-white"
           >
             {footer.phone.label}
           </a>
@@ -20,10 +20,10 @@ export default function Footer() {
         {footer.columns.map((col) => (
           <div key={col.title}>
             <h3 className="text-sm font-semibold uppercase tracking-wider text-white/50">{col.title}</h3>
-            <ul className="mt-4 space-y-3">
+            <ul className="mt-3 space-y-1">
               {col.links.map((link) => (
                 <li key={link.href}>
-                  <a href={link.href} className="text-sm text-white/80 transition hover:text-rig-green">
+                  <a href={link.href} className="inline-block py-1.5 text-sm text-white/80 transition hover:text-rig-green">
                     {link.label}
                   </a>
                 </li>
@@ -40,7 +40,7 @@ export default function Footer() {
             <h3 className="text-sm font-semibold uppercase tracking-wider text-white/50">
               {footer.directory.title}
             </h3>
-            <a href={DIRECTORY_ROOT} className="text-sm font-semibold text-rig-green transition hover:text-white">
+            <a href={DIRECTORY_ROOT} className="inline-block py-1.5 text-sm font-semibold text-rig-green transition hover:text-white">
               {footer.directory.browseAll} →
             </a>
           </div>
@@ -48,10 +48,10 @@ export default function Footer() {
           <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-white/40">
             {footer.directory.corridorsTitle}
           </p>
-          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+          <ul className="mt-2 flex flex-wrap gap-x-5">
             {directoryCorridors.map((link) => (
               <li key={link.href}>
-                <a href={link.href} className="text-sm text-white/70 transition hover:text-rig-green">
+                <a href={link.href} className="inline-block py-1.5 text-sm text-white/70 transition hover:text-rig-green">
                   {link.label}
                 </a>
               </li>
@@ -61,10 +61,10 @@ export default function Footer() {
           <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-white/40">
             {footer.directory.statesTitle}
           </p>
-          <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+          <ul className="mt-2 grid grid-cols-2 gap-x-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {directoryStates.map((link) => (
               <li key={link.href}>
-                <a href={link.href} className="text-sm text-white/70 transition hover:text-rig-green">
+                <a href={link.href} className="inline-block py-1.5 text-sm text-white/70 transition hover:text-rig-green">
                   {link.label}
                 </a>
               </li>

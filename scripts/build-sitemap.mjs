@@ -16,7 +16,8 @@ import url from 'url'
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
 const ROOT = path.join(__dirname, '..')
 const PUBLIC_DIR = path.join(ROOT, 'public')
-const ORIGIN = 'https://www.bigrig.app'
+// Canonical host is the apex (www 301s back to it).
+const ORIGIN = 'https://bigrig.app'
 
 const RIG_ADS_DIR = process.env.RIG_ADS_DIR || path.join(ROOT, '..', 'rig-ads-website')
 
@@ -34,7 +35,8 @@ let adsUrls = []
 if (fs.existsSync(adsSitemapPath)) {
   const xml = fs.readFileSync(adsSitemapPath, 'utf8')
   for (const m of xml.matchAll(/<url>\s*<loc>([^<]+)<\/loc>(?:\s*<priority>([^<]+)<\/priority>)?\s*<\/url>/g)) {
-    adsUrls.push({ loc: m[1], priority: m[2] || '0.5' })
+    // The rig-ads repo still emits www URLs; canonicalize to the apex.
+    adsUrls.push({ loc: m[1].replace('https://www.bigrig.app', ORIGIN), priority: m[2] || '0.5' })
   }
   console.log(`merged ${adsUrls.length} URLs from ${adsSitemapPath}`)
 } else {

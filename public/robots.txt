@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.bigrig.app/sitemap.xml
+Sitemap: https://bigrig.app/sitemap.xml

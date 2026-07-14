@@ -3,7 +3,7 @@
 // `seo-directory` branch). Source of truth: rig-ads-website/data/directory/.
 // Regenerate this list when the directory adds states or corridors.
 
-export const DIRECTORY_ORIGIN = 'https://www.bigrig.app'
+export const DIRECTORY_ORIGIN = 'https://bigrig.app'
 export const DIRECTORY_ROOT = `${DIRECTORY_ORIGIN}/semi-truck-repair/`
 export const DIRECTORY_CORRIDORS_ROOT = `${DIRECTORY_ORIGIN}/semi-truck-repair/corridors/`
 

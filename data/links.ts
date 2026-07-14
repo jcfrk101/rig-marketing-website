@@ -3,7 +3,7 @@
 // destination once and every page follows. data/directory.ts holds the
 // SEO-directory state/corridor links; its roots are re-exported below.
 //
-// Internal routes (this repo, served at www.bigrig.app):
+// Internal routes (this repo, served at bigrig.app — apex is canonical, www 301s to it):
 //   /                 fleet product page (doubles as the homepage for now)
 //   /products         product overview
 //   /owner-operators  driver app pitch

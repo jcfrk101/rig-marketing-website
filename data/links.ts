@@ -14,11 +14,13 @@
 //   /fleets           alias for / — the directory site links here (redirect)
 //
 // External surfaces:
-//   repair.bigrig.app   24/7 repair dispatch web flow
+//   /semi-truck-repair  24/7 repair dispatch + SEO directory (rig-ads-website
+//                       repo; replaces the retired repair.bigrig.app)
 //   fleet.bigrig.app    fleet dashboard (existing-customer login)
 //   calendly            demo booking
 //   app stores          driver & mechanic apps
-//   /semi-truck-repair  SEO directory (rig-ads-website repo)
+
+import { DIRECTORY_ROOT } from './directory'
 
 export { DIRECTORY_ROOT, DIRECTORY_CORRIDORS_ROOT } from './directory'
 
@@ -31,7 +33,8 @@ export const links = {
   join: '/join',
 
   // Product surfaces
-  repairDispatch: 'https://repair.bigrig.app',
+  // Repair dispatch lives at the directory root (repair.bigrig.app is retired).
+  repairDispatch: DIRECTORY_ROOT,
   fleetDashboard: 'https://fleet.bigrig.app',
   demo: 'https://calendly.com/d/cw76-3bd-26v/demos',
 

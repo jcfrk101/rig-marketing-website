@@ -15,7 +15,7 @@ function Phone({ src, alt, caption, className = '' }: { src: string; alt: string
 }
 
 export default function NetworkCoverage() {
-  const { eyebrow, title, subtitle, stats, mapCaption, bidding } = networkCoverage
+  const { eyebrow, title, subtitle, stats, mapCaption, dispatchCta, bidding } = networkCoverage
 
   return (
     <section className="relative overflow-hidden bg-rig-navy-deep py-16 text-white sm:py-24">
@@ -51,6 +51,22 @@ export default function NetworkCoverage() {
           ))}
         </div>
 
+        {/* Dispatch callout — for anyone who needs a mechanic right now */}
+        <div className="mt-8 flex flex-col gap-4 rounded-2xl border border-rig-green/30 bg-rig-green/10 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-white">{dispatchCta.title}</h3>
+            <p className="mt-1 text-sm text-white/65">{dispatchCta.copy}</p>
+          </div>
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <a href={dispatchCta.button.href} className="btn-primary">
+              {dispatchCta.button.label}
+            </a>
+            <a href={dispatchCta.phone.href} className="text-sm font-medium text-white/70 transition hover:text-rig-green">
+              {dispatchCta.phone.label}
+            </a>
+          </div>
+        </div>
+
         {/* Bidding: how the network turns into faster, more competitive service */}
         <div className="mt-16 grid items-center gap-12 lg:grid-cols-[1.05fr_1fr]">
           <div>
@@ -66,6 +82,15 @@ export default function NetworkCoverage() {
                 </li>
               ))}
             </ul>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <a href={bidding.cta.href} className="btn-primary w-full sm:w-auto">
+                {bidding.cta.label}
+              </a>
+              <a href={bidding.secondaryCta.href} className="btn-on-dark w-full sm:w-auto">
+                {bidding.secondaryCta.label}
+              </a>
+            </div>
           </div>
 
           {/* Mechanic-app screenshots — green UI already matches the brand */}

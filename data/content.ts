@@ -1,20 +1,23 @@
 // Central copy for the marketing site. Edit text here — components read from this file.
+// Destinations resolve through the canonical link map in data/links.ts.
+
+import { links, DIRECTORY_ROOT } from './links'
 
 export const brand = {
   name: 'Rig',
   product: 'Rig Fleet',
-  demoUrl: 'https://fleet.bigrig.app',
+  demoUrl: links.fleetDashboard,
   contactEmail: 'hello@bigrig.app',
 }
 
 export const nav = {
   links: [
-    { label: 'Products', href: '/products' },
-    { label: 'Fleets', href: '/' },
-    { label: 'Owner Operators', href: '/owner-operators' },
-    { label: 'Shops', href: '/shops' },
+    { label: 'Products', href: links.products },
+    { label: 'Fleets', href: links.home },
+    { label: 'Owner Operators', href: links.ownerOperators },
+    { label: 'Shops', href: links.shops },
   ],
-  cta: { label: 'Book a demo', href: 'https://calendly.com/d/cw76-3bd-26v/demos' },
+  cta: { label: 'Book a demo', href: links.demo },
 }
 
 export const hero = {
@@ -22,7 +25,7 @@ export const hero = {
   title: 'The execution layer for fleet maintenance.',
   subtitle:
     'Rig covers the entire execution path — from dispatching and payment to fulfillment, proof of service, and verification. End-to-end execution for every breakdown and all maintenance, handled and documented in one place.',
-  primaryCta: { label: 'Book a demo', href: 'https://calendly.com/d/cw76-3bd-26v/demos' },
+  primaryCta: { label: 'Book a demo', href: links.demo },
   secondaryCta: { label: 'See how it works', href: '#how-it-works' },
   // `dispatch` and `trucks` are overridden by live backend data (see HeroStats);
   // `static` values (e.g. network size) are not. Values here are the fallback.
@@ -45,6 +48,13 @@ export const networkCoverage = {
     { value: 'Coast to coast', label: 'major corridors to the last mile' },
   ],
   mapCaption: 'Each dot is a mechanic or shop in the Rig network.',
+  // Dispatch callout under the coverage stats — for anyone broken down right now.
+  dispatchCta: {
+    title: 'Need service now?',
+    copy: 'Get help now through our nationwide dispatch — 24/7.',
+    button: { label: 'Get help now', href: links.repairDispatch },
+    phone: { label: `Or call ${links.phoneDisplay}`, href: links.phoneTel },
+  },
   bidding: {
     eyebrow: 'Mechanics bid through the app',
     title: 'Providers compete for the job — in real time, in the Rig app.',
@@ -67,6 +77,9 @@ export const networkCoverage = {
       { src: '/mechanic-pricing.png', alt: 'Mechanic setting callout fee, mileage, and prep time in the Rig app', caption: 'Set price & ETA' },
       { src: '/mechanic-confirmation.png', alt: 'Mechanic confirming the offer with total and ETA before sending', caption: 'Send the offer' },
     ],
+    // Mechanic recruiting — the flip side of the bidding story.
+    cta: { label: 'Join as a mechanic', href: links.join },
+    secondaryCta: { label: 'Learn more', href: links.shops },
   },
 }
 
@@ -196,38 +209,39 @@ export const finalCta = {
   title: 'See Rig run a breakdown end to end.',
   subtitle:
     'Book a walkthrough and we’ll show you the full execution path — dispatching, payment, fulfillment, and documentation — on your fleet’s terms.',
-  cta: { label: 'Book a demo', href: 'https://calendly.com/d/cw76-3bd-26v/demos' },
+  cta: { label: 'Book a demo', href: links.demo },
 }
 
 export const footer = {
   tagline: 'One network for truck repair — dispatch, repairs, and fleet maintenance.',
-  phone: { label: '24/7 dispatch: 1 (855) 744-2223', href: 'tel:+18557442223' },
+  phone: { label: `24/7 dispatch: ${links.phoneDisplay}`, href: links.phoneTel },
   columns: [
     {
       title: 'Products',
       links: [
-        { label: 'All products', href: '/products' },
-        { label: 'Rig Fleet', href: '/' },
-        { label: 'Repair dispatch', href: 'https://repair.bigrig.app' },
-        { label: 'Fleet dashboard', href: 'https://fleet.bigrig.app' },
-        { label: 'Driver app', href: '/owner-operators' },
-        { label: 'Mechanic app', href: '/shops' },
+        { label: 'All products', href: links.products },
+        { label: 'Rig Fleet', href: links.home },
+        { label: 'Repair dispatch', href: links.repairDispatch },
+        { label: 'Fleet dashboard', href: links.fleetDashboard },
+        { label: 'Driver app', href: links.ownerOperators },
+        { label: 'Mechanic app', href: links.shops },
       ],
     },
     {
       title: 'Who it’s for',
       links: [
-        { label: 'Fleets', href: '/' },
-        { label: 'Owner operators & drivers', href: '/owner-operators' },
-        { label: 'Shops & mechanics', href: '/shops' },
+        { label: 'Fleets', href: links.home },
+        { label: 'Owner operators & drivers', href: links.ownerOperators },
+        { label: 'Shops & mechanics', href: links.shops },
+        { label: 'Join as a mechanic', href: links.join },
       ],
     },
     {
       title: 'Company',
       links: [
-        { label: 'Book a demo', href: 'https://calendly.com/d/cw76-3bd-26v/demos' },
-        { label: 'Contact', href: 'mailto:hello@bigrig.app' },
-        { label: 'Call 1 (855) 744-2223', href: 'tel:+18557442223' },
+        { label: 'Book a demo', href: links.demo },
+        { label: 'Contact', href: links.contactEmail },
+        { label: `Call ${links.phoneDisplay}`, href: links.phoneTel },
       ],
     },
   ],

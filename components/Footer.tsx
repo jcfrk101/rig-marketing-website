@@ -1,13 +1,20 @@
 import Logo from './Logo'
 import { footer, brand } from '@/data/content'
+import { directoryStates, directoryCorridors, DIRECTORY_ROOT } from '@/data/directory'
 
 export default function Footer() {
   return (
     <footer className="bg-rig-navy-deep text-white">
-      <div className="container-rig grid gap-10 py-14 md:grid-cols-[1.5fr_1fr_1fr]">
+      <div className="container-rig grid gap-10 py-14 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
         <div>
           <Logo />
           <p className="mt-4 max-w-xs text-sm text-white/60">{footer.tagline}</p>
+          <a
+            href={footer.phone.href}
+            className="mt-4 inline-block text-sm font-semibold text-rig-green transition hover:text-white"
+          >
+            {footer.phone.label}
+          </a>
         </div>
 
         {footer.columns.map((col) => (
@@ -24,6 +31,46 @@ export default function Footer() {
             </ul>
           </div>
         ))}
+      </div>
+
+      {/* SEO directory — links into www.bigrig.app/semi-truck-repair */}
+      <div className="border-t border-white/10">
+        <div className="container-rig py-10">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-white/50">
+              {footer.directory.title}
+            </h3>
+            <a href={DIRECTORY_ROOT} className="text-sm font-semibold text-rig-green transition hover:text-white">
+              {footer.directory.browseAll} →
+            </a>
+          </div>
+
+          <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-white/40">
+            {footer.directory.corridorsTitle}
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+            {directoryCorridors.map((link) => (
+              <li key={link.href}>
+                <a href={link.href} className="text-sm text-white/70 transition hover:text-rig-green">
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-white/40">
+            {footer.directory.statesTitle}
+          </p>
+          <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            {directoryStates.map((link) => (
+              <li key={link.href}>
+                <a href={link.href} className="text-sm text-white/70 transition hover:text-rig-green">
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
       <div className="border-t border-white/10">

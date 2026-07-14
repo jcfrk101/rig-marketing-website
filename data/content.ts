@@ -9,6 +9,7 @@ export const brand = {
 
 export const nav = {
   links: [
+    { label: 'Products', href: '/products' },
     { label: 'Fleets', href: '/' },
     { label: 'Owner Operators', href: '/owner-operators' },
     { label: 'Shops', href: '/shops' },
@@ -199,23 +200,41 @@ export const finalCta = {
 }
 
 export const footer = {
-  tagline: 'The execution layer for fleet maintenance.',
+  tagline: 'One network for truck repair — dispatch, repairs, and fleet maintenance.',
+  phone: { label: '24/7 dispatch: 1 (855) 744-2223', href: 'tel:+18557442223' },
   columns: [
     {
-      title: 'Product',
+      title: 'Products',
       links: [
-        { label: 'How it works', href: '#how-it-works' },
-        { label: 'Why Rig', href: '#why-rig' },
-        { label: 'Feature status', href: '#status' },
+        { label: 'All products', href: '/products' },
+        { label: 'Rig Fleet', href: '/' },
+        { label: 'Repair dispatch', href: 'https://repair.bigrig.app' },
         { label: 'Fleet dashboard', href: 'https://fleet.bigrig.app' },
+        { label: 'Driver app', href: '/owner-operators' },
+        { label: 'Mechanic app', href: '/shops' },
+      ],
+    },
+    {
+      title: 'Who it’s for',
+      links: [
+        { label: 'Fleets', href: '/' },
+        { label: 'Owner operators & drivers', href: '/owner-operators' },
+        { label: 'Shops & mechanics', href: '/shops' },
       ],
     },
     {
       title: 'Company',
       links: [
-        { label: 'bigrig.app', href: 'https://www.bigrig.app' },
+        { label: 'Book a demo', href: 'https://calendly.com/d/cw76-3bd-26v/demos' },
         { label: 'Contact', href: 'mailto:hello@bigrig.app' },
+        { label: 'Call 1 (855) 744-2223', href: 'tel:+18557442223' },
       ],
     },
   ],
+  directory: {
+    title: 'Find semi-truck repair near you',
+    statesTitle: 'By state',
+    corridorsTitle: 'Popular corridors',
+    browseAll: 'Browse the full directory',
+  },
 }

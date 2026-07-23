@@ -1,0 +1,60 @@
+# Staging deploy for the marketing site.
+# Triggered on pushes to the `web-staging` branch → deploys the `web-staging`
+# Cloud Run service in us-central1. Mirrors cloudbuild.yaml (production) with
+# two differences: it uses `gcloud run deploy` (create-or-update, so the first
+# push provisions the service) and min-instances=0 (staging tolerates cold starts).
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: Build
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        docker build --no-cache \
+        -t $_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA \
+        --build-arg NEXT_PUBLIC_API_URL=$_API_URL \
+        . \
+        -f Dockerfile
+    timeout: 1800s
+  - name: gcr.io/cloud-builders/docker
+    id: Push
+    args:
+      - push
+      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: Deploy
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        gcloud run deploy $_SERVICE_NAME \
+        --platform=managed \
+        --image=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA \
+        --labels=commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID \
+        --region=$_DEPLOY_REGION \
+        --memory=512Mi \
+        --cpu=1 \
+        --min-instances=0 \
+        --port=8080 \
+        --quiet && \
+        gcloud run services add-iam-policy-binding $_SERVICE_NAME \
+        --platform=managed \
+        --region=$_DEPLOY_REGION \
+        --member="allUsers" \
+        --role="roles/run.invoker" \
+        --quiet
+images:
+  - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+options:
+  substitutionOption: ALLOW_LOOSE
+  logging: CLOUD_LOGGING_ONLY
+substitutions:
+  _DEPLOY_REGION: us-central1
+  _GCR_HOSTNAME: us.gcr.io
+  _PLATFORM: managed
+  _SERVICE_NAME: web-staging
+  _API_URL: https://api.bigrig.app
+  _NEXT_PUBLIC_API_URL: https://api.bigrig.app
+tags:
+  - web-staging
+timeout: 3600s

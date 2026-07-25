@@ -34,10 +34,20 @@ const adsSitemapPath = path.join(RIG_ADS_DIR, 'public', 'sitemap.xml')
 let adsUrls = []
 if (fs.existsSync(adsSitemapPath)) {
   const xml = fs.readFileSync(adsSitemapPath, 'utf8')
+  // States the directory's coverage gate excludes (their pages 404 in prod).
+  // The rig-ads sitemap generator doesn't apply the gate; filter here until it does.
+  const UNCOVERED_STATES = ['ak', 'hi']
+  const uncovered = new RegExp(`/semi-truck-repair/(${UNCOVERED_STATES.join('|')})/`)
+  let dropped = 0
   for (const m of xml.matchAll(/<url>\s*<loc>([^<]+)<\/loc>(?:\s*<priority>([^<]+)<\/priority>)?\s*<\/url>/g)) {
+    if (uncovered.test(m[1])) {
+      dropped++
+      continue
+    }
     // The rig-ads repo still emits www URLs; canonicalize to the apex.
     adsUrls.push({ loc: m[1].replace('https://www.bigrig.app', ORIGIN), priority: m[2] || '0.5' })
   }
+  if (dropped) console.log(`dropped ${dropped} URLs for uncovered states (${UNCOVERED_STATES.join(', ')})`)
   console.log(`merged ${adsUrls.length} URLs from ${adsSitemapPath}`)
 } else {
   console.warn(`WARNING: ${adsSitemapPath} not found — sitemap will only contain this site's pages.`)

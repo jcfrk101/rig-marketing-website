@@ -13,9 +13,11 @@ export interface DirectoryLink {
 }
 
 // All states with directory coverage, alphabetical.
+// Alaska and Hawaii are omitted: the directory's coverage gate (isStateCovered
+// in rig-ads-website) only publishes a state hub once it has real mechanic
+// listings, and those two 404 in production today. Re-add when covered.
 export const directoryStates: DirectoryLink[] = [
   { label: 'Alabama', href: `${DIRECTORY_ORIGIN}/semi-truck-repair/al/` },
-  { label: 'Alaska', href: `${DIRECTORY_ORIGIN}/semi-truck-repair/ak/` },
   { label: 'Arizona', href: `${DIRECTORY_ORIGIN}/semi-truck-repair/az/` },
   { label: 'Arkansas', href: `${DIRECTORY_ORIGIN}/semi-truck-repair/ar/` },
   { label: 'California', href: `${DIRECTORY_ORIGIN}/semi-truck-repair/ca/` },
@@ -25,7 +27,6 @@ export const directoryStates: DirectoryLink[] = [
   { label: 'District of Columbia', href: `${DIRECTORY_ORIGIN}/semi-truck-repair/dc/` },
   { label: 'Florida', href: `${DIRECTORY_ORIGIN}/semi-truck-repair/fl/` },
   { label: 'Georgia', href: `${DIRECTORY_ORIGIN}/semi-truck-repair/ga/` },
-  { label: 'Hawaii', href: `${DIRECTORY_ORIGIN}/semi-truck-repair/hi/` },
   { label: 'Idaho', href: `${DIRECTORY_ORIGIN}/semi-truck-repair/id/` },
   { label: 'Illinois', href: `${DIRECTORY_ORIGIN}/semi-truck-repair/il/` },
   { label: 'Indiana', href: `${DIRECTORY_ORIGIN}/semi-truck-repair/in/` },

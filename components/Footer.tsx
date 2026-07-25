@@ -75,7 +75,18 @@ export default function Footer() {
 
       <div className="border-t border-white/10">
         <div className="container-rig flex flex-col gap-2 py-6 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between">
-          <span>© {new Date().getFullYear()} {brand.name}. All rights reserved.</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <span>© {new Date().getFullYear()} {brand.name}. All rights reserved.</span>
+            {footer.legal.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="inline-block py-1.5 text-white/60 transition hover:text-rig-green"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
           <span>Built for fleets that can’t afford downtime.</span>
         </div>
       </div>

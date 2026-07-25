@@ -18,6 +18,8 @@ export const nav = {
     { label: 'Shops', href: links.shops },
   ],
   cta: { label: 'Book a demo', href: links.demo },
+  // Secondary header CTA — outlined style, for anyone broken down right now.
+  ctaSecondary: { label: 'Get help now', href: links.repairDispatch },
 }
 
 export const hero = {
@@ -251,4 +253,8 @@ export const footer = {
     corridorsTitle: 'Popular corridors',
     browseAll: 'Browse the full directory',
   },
+  legal: [
+    { label: 'Terms of Use', href: links.terms },
+    { label: 'Privacy Policy', href: links.privacy },
+  ],
 }

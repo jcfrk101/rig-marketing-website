@@ -45,9 +45,14 @@ export const links = {
   // Apps
   driverAppIos: 'https://apps.apple.com/app/id1605615839',
   driverAppAndroid: 'https://play.google.com/store/apps/details?id=com.rig.driver.app',
-  mechanicAppIos: 'https://apps.apple.com/us/app/rig-mechanic',
+  mechanicAppIos: 'https://apps.apple.com/us/app/rig-mechanic/id1605635549',
   mechanicAppAndroid: 'https://play.google.com/store/apps/details?id=com.rig.mechanic.app',
 
   // Company
   contactEmail: 'mailto:hello@bigrig.app',
+
+  // Legal — terms are served by the fleet app; privacy policy is Termly-hosted
+  // (the same document the terms page itself links to).
+  terms: 'https://fleet.bigrig.app/terms',
+  privacy: 'https://app.termly.io/document/privacy-policy/ac7366a2-9849-41f8-b938-760ab198e47b',
 } as const

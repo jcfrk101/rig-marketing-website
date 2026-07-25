@@ -40,19 +40,19 @@ export const hero = {
 
 // Nationwide network coverage — sits above the "By the numbers" section.
 export const networkCoverage = {
-  eyebrow: 'Nationwide network',
+  eyebrow: 'Nationwide diesel mechanic network',
   title: 'A network deep enough that coverage is never the reason a unit sits.',
   subtitle:
-    'Rig connects fleets to a coast-to-coast network of vetted mechanics and shops. Every dot is a service provider ready to take a job — across 48 states, from major freight corridors to the last mile.',
+    'Rig connects fleets to a coast-to-coast network of vetted diesel mechanics and shops. Every dot is a diesel mechanic ready to take a job — across 48 states, from major freight corridors to the last mile.',
   stats: [
     { value: '6,000+', label: 'mechanics & shops nationwide' },
     { value: '48', label: 'states covered' },
     { value: 'Coast to coast', label: 'major corridors to the last mile' },
   ],
-  mapCaption: 'Each dot is a mechanic or shop in the Rig network.',
+  mapCaption: 'Each dot is a diesel mechanic or shop in the Rig network.',
   // Dispatch callout under the coverage stats — for anyone broken down right now.
   dispatchCta: {
-    title: 'Need service now?',
+    title: 'Need diesel truck repair now?',
     copy: 'Get help now through our nationwide dispatch — 24/7.',
     button: { label: 'Get help now', href: links.repairDispatch },
     phone: { label: `Or call ${links.phoneDisplay}`, href: links.phoneTel },
@@ -215,7 +215,7 @@ export const finalCta = {
 }
 
 export const footer = {
-  tagline: 'One network for truck repair — dispatch, repairs, and fleet maintenance.',
+  tagline: 'One network for diesel truck repair — dispatch, repairs, and fleet maintenance.',
   phone: { label: `24/7 dispatch: ${links.phoneDisplay}`, href: links.phoneTel },
   columns: [
     {
@@ -248,7 +248,7 @@ export const footer = {
     },
   ],
   directory: {
-    title: 'Find semi-truck repair near you',
+    title: 'Find diesel truck repair near you',
     blurb:
       'From roadside diesel mechanics to full-service truck shops, the Rig network covers heavy-duty diesel repair coast to coast — engine diagnostics, aftertreatment and DPF, brakes, electrical, tires, and mobile service that comes to the truck. Find a diesel mechanic near you, or call 24/7 dispatch and get help wherever you broke down.',
     statesTitle: 'By state',

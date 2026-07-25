@@ -249,6 +249,8 @@ export const footer = {
   ],
   directory: {
     title: 'Find semi-truck repair near you',
+    blurb:
+      'From roadside diesel mechanics to full-service truck shops, the Rig network covers heavy-duty diesel repair coast to coast — engine diagnostics, aftertreatment and DPF, brakes, electrical, tires, and mobile service that comes to the truck. Find a diesel mechanic near you, or call 24/7 dispatch and get help wherever you broke down.',
     statesTitle: 'By state',
     corridorsTitle: 'Popular corridors',
     browseAll: 'Browse the full directory',

@@ -45,6 +45,8 @@ export default function Footer() {
             </a>
           </div>
 
+          <p className="mt-4 max-w-3xl text-sm leading-relaxed text-white/50">{footer.directory.blurb}</p>
+
           <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-white/40">
             {footer.directory.corridorsTitle}
           </p>

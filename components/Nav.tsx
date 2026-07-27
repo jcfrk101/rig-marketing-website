@@ -36,14 +36,14 @@ export default function Nav() {
           })}
         </nav>
 
-        <a
-          href={nav.cta.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-primary hidden md:inline-flex"
-        >
-          {nav.cta.label}
-        </a>
+        <div className="hidden items-center gap-3 md:flex">
+          <a href={nav.ctaSecondary.href} className="btn-on-dark">
+            {nav.ctaSecondary.label}
+          </a>
+          <a href={nav.cta.href} target="_blank" rel="noopener noreferrer" className="btn-primary">
+            {nav.cta.label}
+          </a>
+        </div>
 
         {/* Mobile menu toggle */}
         <button
@@ -90,6 +90,13 @@ export default function Nav() {
                 </Link>
               )
             })}
+            <a
+              href={nav.ctaSecondary.href}
+              onClick={() => setOpen(false)}
+              className="btn-on-dark mt-2 w-full"
+            >
+              {nav.ctaSecondary.label}
+            </a>
             <a
               href={nav.cta.href}
               target="_blank"

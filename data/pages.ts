@@ -1,8 +1,10 @@
-// Content for the Owner Operators and Shops pages.
+// Content for the Owner Operators, Shops, and Products pages.
 // Copy sourced from the current public site (bigrig.app — driver & mechanic apps).
 
-const CALL_CENTER = '1 (855) 744-2223'
-const CALL_CENTER_TEL = 'tel:+18557442223'
+import { links, DIRECTORY_ROOT } from './links'
+
+const CALL_CENTER = links.phoneDisplay
+const CALL_CENTER_TEL = links.phoneTel
 
 export const ownerOperators = {
   hero: {
@@ -12,7 +14,7 @@ export const ownerOperators = {
       'Rig connects short and long haul truck drivers with a nationwide network of reputable mechanics who are open to service your needs wherever and whenever you need.',
     primaryCta: {
       label: 'Get the Driver app',
-      href: 'https://apps.apple.com/app/id1605615839',
+      href: links.driverAppIos,
     },
     secondaryCta: { label: `Call ${CALL_CENTER}`, href: CALL_CENTER_TEL },
   },
@@ -43,8 +45,8 @@ export const ownerOperators = {
     href: CALL_CENTER_TEL,
   },
   appLinks: {
-    ios: 'https://apps.apple.com/app/id1605615839',
-    android: 'https://play.google.com/store/apps/details?id=com.rig.driver.app',
+    ios: links.driverAppIos,
+    android: links.driverAppAndroid,
   },
   finalCta: {
     eyebrow: 'Get started',
@@ -61,7 +63,7 @@ export const shops = {
       'Rig connects a nationwide network of local mechanics to truck drivers across the nation, helping mechanics access clients without constant marketing.',
     primaryCta: {
       label: 'Get the Mechanic app',
-      href: 'https://play.google.com/store/apps/details?id=com.rig.mechanic.app',
+      href: links.mechanicAppAndroid,
     },
     secondaryCta: { label: `Call ${CALL_CENTER}`, href: CALL_CENTER_TEL },
   },
@@ -87,12 +89,88 @@ export const shops = {
     ],
   },
   appLinks: {
-    ios: 'https://apps.apple.com/us/app/rig-mechanic',
-    android: 'https://play.google.com/store/apps/details?id=com.rig.mechanic.app',
+    ios: links.mechanicAppIos,
+    android: links.mechanicAppAndroid,
   },
   finalCta: {
     eyebrow: 'Get started',
     title: 'Get the Rig Mechanic app.',
     subtitle: 'Access clients across the nation without spending a dollar on marketing.',
+  },
+}
+
+export const products = {
+  hero: {
+    eyebrow: 'Products',
+    title: 'One network. Every side of truck repair.',
+    subtitle:
+      'Rig connects fleets, drivers, and mechanics on a single nationwide network — from 24/7 breakdown dispatch to end-to-end fleet maintenance. Pick the product built for how you work.',
+    primaryCta: { label: 'Book a demo', href: links.demo },
+    secondaryCta: { label: `Call ${CALL_CENTER}`, href: CALL_CENTER_TEL },
+  },
+  items: [
+    {
+      eyebrow: 'For fleets',
+      name: 'Rig Fleet',
+      tagline: 'The execution layer for fleet maintenance.',
+      copy:
+        'Rig Fleet runs the entire response when a unit goes down — dispatching, payment, fulfillment, and documentation — and logs every job to the unit’s history automatically.',
+      bullets: [
+        'Dispatch to internal mechanics and 6,000+ network providers',
+        'In-platform approval, payment, and live status for every party',
+        'Every repair documented to the unit — export-ready records',
+      ],
+      primaryCta: { label: 'Book a demo', href: links.demo },
+      secondaryCta: { label: 'Learn more', href: links.home },
+    },
+    {
+      eyebrow: '24/7 breakdown help',
+      name: 'Rig Repairs',
+      tagline: 'Repair dispatch, whenever and wherever you break down.',
+      copy:
+        'Request a vetted mechanic in minutes — tire, tow, or mobile service. Competing offers come back with price and ETA, and you track the job live from request to wheels-rolling.',
+      bullets: [
+        'Nationwide network of vetted mechanics and shops',
+        'Competitive offers with transparent pricing and live ETA',
+        `National call center — ${CALL_CENTER}, 24/7`,
+      ],
+      primaryCta: { label: 'Request a repair', href: links.repairDispatch },
+      secondaryCta: { label: `Call ${CALL_CENTER}`, href: CALL_CENTER_TEL },
+    },
+    {
+      eyebrow: 'For owner-operators & drivers',
+      name: 'Rig Driver app',
+      tagline: 'Help is a few taps away, wherever the road takes you.',
+      copy:
+        'Tire, tow, or service — send a request from the app, compare offers from nearby mechanics, and get back on the road. Free to download.',
+      bullets: [
+        'Tire, tow, and mobile service requests',
+        'Compare offers and track the mechanic to your location',
+        'Backed by the 24/7 national call center',
+      ],
+      primaryCta: { label: 'Get the Driver app', href: links.driverAppIos },
+      secondaryCta: { label: 'Learn more', href: links.ownerOperators },
+    },
+    {
+      eyebrow: 'For shops & mechanics',
+      name: 'Rig Mechanic app',
+      tagline: 'More jobs. Less marketing.',
+      copy:
+        'Browse incoming driver requests near you, quote the work, and get paid through the app — a steady stream of jobs without spending a dollar on marketing.',
+      bullets: [
+        'Accept nearby requests or create them manually',
+        'Send offers with your price and ETA',
+        'Complete the work and get paid in-app',
+      ],
+      primaryCta: { label: 'Join as a mechanic', href: links.join },
+      secondaryCta: { label: 'Learn more', href: links.shops },
+    },
+  ],
+  directory: {
+    eyebrow: 'Repair directory',
+    title: 'Find semi-truck repair near you.',
+    copy:
+      'Browse the Rig network by state, city, or interstate corridor — coverage stats, response times, and dispatch in one call.',
+    cta: { label: 'Browse the directory', href: DIRECTORY_ROOT },
   },
 }

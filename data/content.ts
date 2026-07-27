@@ -1,19 +1,25 @@
 // Central copy for the marketing site. Edit text here — components read from this file.
+// Destinations resolve through the canonical link map in data/links.ts.
+
+import { links, DIRECTORY_ROOT } from './links'
 
 export const brand = {
   name: 'Rig',
   product: 'Rig Fleet',
-  demoUrl: 'https://fleet.bigrig.app',
+  demoUrl: links.fleetDashboard,
   contactEmail: 'hello@bigrig.app',
 }
 
 export const nav = {
   links: [
-    { label: 'Fleets', href: '/' },
-    { label: 'Owner Operators', href: '/owner-operators' },
-    { label: 'Shops', href: '/shops' },
+    { label: 'Products', href: links.products },
+    { label: 'Fleets', href: links.home },
+    { label: 'Owner Operators', href: links.ownerOperators },
+    { label: 'Shops', href: links.shops },
   ],
-  cta: { label: 'Book a demo', href: 'https://calendly.com/d/cw76-3bd-26v/demos' },
+  cta: { label: 'Book a demo', href: links.demo },
+  // Secondary header CTA — outlined style, for anyone broken down right now.
+  ctaSecondary: { label: 'Get help now', href: links.repairDispatch },
 }
 
 export const hero = {
@@ -21,7 +27,7 @@ export const hero = {
   title: 'The execution layer for fleet maintenance.',
   subtitle:
     'Rig covers the entire execution path — from dispatching and payment to fulfillment, proof of service, and verification. End-to-end execution for every breakdown and all maintenance, handled and documented in one place.',
-  primaryCta: { label: 'Book a demo', href: 'https://calendly.com/d/cw76-3bd-26v/demos' },
+  primaryCta: { label: 'Book a demo', href: links.demo },
   secondaryCta: { label: 'See how it works', href: '#how-it-works' },
   // `dispatch` and `trucks` are overridden by live backend data (see HeroStats);
   // `static` values (e.g. network size) are not. Values here are the fallback.
@@ -34,16 +40,23 @@ export const hero = {
 
 // Nationwide network coverage — sits above the "By the numbers" section.
 export const networkCoverage = {
-  eyebrow: 'Nationwide network',
+  eyebrow: 'Nationwide diesel mechanic network',
   title: 'A network deep enough that coverage is never the reason a unit sits.',
   subtitle:
-    'Rig connects fleets to a coast-to-coast network of vetted mechanics and shops. Every dot is a service provider ready to take a job — across 48 states, from major freight corridors to the last mile.',
+    'Rig connects fleets to a coast-to-coast network of vetted diesel mechanics and shops. Every dot is a diesel mechanic ready to take a job — across 48 states, from major freight corridors to the last mile.',
   stats: [
     { value: '6,000+', label: 'mechanics & shops nationwide' },
     { value: '48', label: 'states covered' },
     { value: 'Coast to coast', label: 'major corridors to the last mile' },
   ],
-  mapCaption: 'Each dot is a mechanic or shop in the Rig network.',
+  mapCaption: 'Each dot is a diesel mechanic or shop in the Rig network.',
+  // Dispatch callout under the coverage stats — for anyone broken down right now.
+  dispatchCta: {
+    title: 'Need diesel truck repair now?',
+    copy: 'Get help now through our nationwide dispatch — 24/7.',
+    button: { label: 'Get help now', href: links.repairDispatch },
+    phone: { label: `Or call ${links.phoneDisplay}`, href: links.phoneTel },
+  },
   bidding: {
     eyebrow: 'Mechanics bid through the app',
     title: 'Providers compete for the job — in real time, in the Rig app.',
@@ -66,6 +79,9 @@ export const networkCoverage = {
       { src: '/mechanic-pricing.png', alt: 'Mechanic setting callout fee, mileage, and prep time in the Rig app', caption: 'Set price & ETA' },
       { src: '/mechanic-confirmation.png', alt: 'Mechanic confirming the offer with total and ETA before sending', caption: 'Send the offer' },
     ],
+    // Mechanic recruiting — the flip side of the bidding story.
+    cta: { label: 'Join as a mechanic', href: links.join },
+    secondaryCta: { label: 'Learn more', href: links.shops },
   },
 }
 
@@ -195,27 +211,52 @@ export const finalCta = {
   title: 'See Rig run a breakdown end to end.',
   subtitle:
     'Book a walkthrough and we’ll show you the full execution path — dispatching, payment, fulfillment, and documentation — on your fleet’s terms.',
-  cta: { label: 'Book a demo', href: 'https://calendly.com/d/cw76-3bd-26v/demos' },
+  cta: { label: 'Book a demo', href: links.demo },
 }
 
 export const footer = {
-  tagline: 'The execution layer for fleet maintenance.',
+  tagline: 'One network for diesel truck repair — dispatch, repairs, and fleet maintenance.',
+  phone: { label: `24/7 dispatch: ${links.phoneDisplay}`, href: links.phoneTel },
   columns: [
     {
-      title: 'Product',
+      title: 'Products',
       links: [
-        { label: 'How it works', href: '#how-it-works' },
-        { label: 'Why Rig', href: '#why-rig' },
-        { label: 'Feature status', href: '#status' },
-        { label: 'Fleet dashboard', href: 'https://fleet.bigrig.app' },
+        { label: 'All products', href: links.products },
+        { label: 'Rig Fleet', href: links.home },
+        { label: 'Repair dispatch', href: links.repairDispatch },
+        { label: 'Fleet dashboard', href: links.fleetDashboard },
+        { label: 'Driver app', href: links.ownerOperators },
+        { label: 'Mechanic app', href: links.shops },
+      ],
+    },
+    {
+      title: 'Who it’s for',
+      links: [
+        { label: 'Fleets', href: links.home },
+        { label: 'Owner operators & drivers', href: links.ownerOperators },
+        { label: 'Shops & mechanics', href: links.shops },
+        { label: 'Join as a mechanic', href: links.join },
       ],
     },
     {
       title: 'Company',
       links: [
-        { label: 'bigrig.app', href: 'https://www.bigrig.app' },
-        { label: 'Contact', href: 'mailto:hello@bigrig.app' },
+        { label: 'Book a demo', href: links.demo },
+        { label: 'Contact', href: links.contactEmail },
+        { label: `Call ${links.phoneDisplay}`, href: links.phoneTel },
       ],
     },
+  ],
+  directory: {
+    title: 'Find diesel truck repair near you',
+    blurb:
+      'From roadside diesel mechanics to full-service truck shops, the Rig network covers heavy-duty diesel repair coast to coast — engine diagnostics, aftertreatment and DPF, brakes, electrical, tires, and mobile service that comes to the truck. Find a diesel mechanic near you, or call 24/7 dispatch and get help wherever you broke down.',
+    statesTitle: 'By state',
+    corridorsTitle: 'Popular corridors',
+    browseAll: 'Browse the full directory',
+  },
+  legal: [
+    { label: 'Terms of Use', href: links.terms },
+    { label: 'Privacy Policy', href: links.privacy },
   ],
 }

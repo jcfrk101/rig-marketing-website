@@ -12,9 +12,8 @@ deployed to Cloud Run behind a global load balancer that also serves the SEO dir
 | Production | `main` | `rig-marketing-website` (us-central1) | `cloudbuild-production.yaml` (on `main`) | https://bigrig.app |
 
 Cloud Build triggers live in project `rig-production-337414`, region **global**:
-`web-staging-deploy` (push to `web-staging`), `prod-rig-marketing-website` and
-`marketing-prod-build-on-tag` (production — both fire on tags matching `prod-deploy-v*`
-and require manual approval; one of the two should eventually be deleted).
+`web-staging-deploy` (push to `web-staging`) and `prod-rig-marketing-website`
+(production — fires on tags matching `prod-deploy-v*` and requires manual approval).
 
 ## Branch & release flow
 
@@ -42,9 +41,7 @@ feature/xyz ──merge──▶ web-staging ──merge──▶ main ──tag
    gcloud builds list --project=rig-production-337414 --filter="status=PENDING"
    gcloud beta builds approve <BUILD_ID> --project=rig-production-337414
    ```
-   Coordinate before approving — the approval is the cutover. If two identical pending
-   builds appear (two triggers currently match the same tag pattern), approve one and
-   `gcloud beta builds reject` the other.
+   Coordinate before approving — the approval is the cutover.
 4. If `web-staging` ever accumulates experiments that shouldn't ship, reset it from
    `main` (`git checkout web-staging && git reset --hard origin/main && git push -f`),
    then re-merge only the branches that should graduate. The staging build config

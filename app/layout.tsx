@@ -17,6 +17,11 @@ export const metadata: Metadata = {
   },
   description:
     'When a truck goes down, Rig books the service, manages payment, runs the repair to completion, and documents every breakdown and maintenance event.',
+  // Search Console URL-prefix property verification (renders the
+  // google-site-verification meta tag in <head>).
+  verification: {
+    google: 'by_ASP5WyU0DTWoqBukb8324hVrbeSVtU4cUUbSOT3Y',
+  },
   manifest: '/favicons/site.webmanifest',
   icons: {
     icon: [

@@ -12,15 +12,15 @@ deployed to Cloud Run behind a global load balancer that also serves the SEO dir
 | Production | `main` | `rig-marketing-website` (us-central1) | `cloudbuild-production.yaml` (on `main`) | https://bigrig.app |
 
 Cloud Build triggers live in project `rig-production-337414`, region **global**:
-`web-staging-deploy` (push to `web-staging`), `prod-rig-marketing-website` and
-`marketing-prod-build-on-tag` (production).
+`web-staging-deploy` (push to `web-staging`) and `prod-rig-marketing-website`
+(production — fires on tags matching `prod-deploy-v*` and requires manual approval).
 
 ## Branch & release flow
 
 ```
-feature/xyz ──merge──▶ web-staging ──PR──▶ main
-                        (auto-deploys        (production deploy —
-                         to staging)          this is a prod cutover)
+feature/xyz ──merge──▶ web-staging ──merge──▶ main ──tag prod-deploy-v*──▶ approve ──▶ prod
+                        (auto-deploys          (no deploy                   (Cloud Build
+                         to staging)            by itself)                   approval gate)
 ```
 
 1. **Do work on a feature branch** cut from `main` (or from `web-staging` if it builds on
@@ -28,9 +28,20 @@ feature/xyz ──merge──▶ web-staging ──PR──▶ main
 2. **Merge the feature branch into `web-staging`** and push. Every push to `web-staging`
    auto-deploys the staging service — integration-test there. Tiny fixes may be committed
    to `web-staging` directly; anything substantial gets a feature branch.
-3. **Release = PR from `web-staging` into `main`.** Never commit or push to `main`
-   directly. Merging to `main` deploys production — treat every merge as a cutover and
-   coordinate before merging.
+3. **Release = merge `web-staging` into `main`, then tag.** Never commit directly to
+   `main`. Merging/pushing `main` does **not** deploy by itself — production deploys are
+   tag-driven with a manual approval gate:
+   ```
+   git checkout main && git merge web-staging --no-ff && git push origin main
+   git tag prod-deploy-vX.Y.Z && git push origin prod-deploy-vX.Y.Z
+   ```
+   The tag fires the prod trigger and the build **parks in Cloud Build's approval queue**
+   (`status: PENDING`). Approve it to deploy:
+   ```
+   gcloud builds list --project=rig-production-337414 --filter="status=PENDING"
+   gcloud beta builds approve <BUILD_ID> --project=rig-production-337414
+   ```
+   Coordinate before approving — the approval is the cutover.
 4. If `web-staging` ever accumulates experiments that shouldn't ship, reset it from
    `main` (`git checkout web-staging && git reset --hard origin/main && git push -f`),
    then re-merge only the branches that should graduate. The staging build config

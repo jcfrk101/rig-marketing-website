@@ -49,6 +49,8 @@ const META: Record<string, string> = {
   meta_deposit: "The $10 deposit confirms the callout and is applied to the job — you're never charged for the service until it's done.",
   meta_how:
     "Quick version: you tell me what broke and where. A **human dispatcher** reviews it, then vetted diesel mechanics near you send **competing offers by text** — price and ETA up front. You pick one, they head your way, and you pay through Rig only when the work's done. We've been doing this for 6,000+ mechanics nationwide, 24/7.",
+  meta_who:
+    "Honest answer: I'm an AI chat bot 🤖 — but I'm just the intake. Once I've got the important details, a **human dispatcher** takes over and routes your request to several mechanics close to you. The robot part is only so you get help faster at 2am.",
 }
 
 // Deterministic placeholder for the nearby-mechanic teaser (4–9), seeded from

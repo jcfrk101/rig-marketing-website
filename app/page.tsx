@@ -1,5 +1,4 @@
 import Hero from '@/components/Hero'
-import ChatWidget from '@/components/ChatWidget'
 import NetworkCoverage from '@/components/NetworkCoverage'
 import ServiceStats from '@/components/ServiceStats'
 import ExecutionFlow from '@/components/ExecutionFlow'
@@ -17,7 +16,6 @@ export default function Home() {
       <Differentiators />
       <FeatureStatus />
       <CTASection />
-      <ChatWidget />
     </>
   )
 }

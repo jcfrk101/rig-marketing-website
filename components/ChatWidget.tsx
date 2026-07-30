@@ -2,7 +2,7 @@ import Script from 'next/script'
 
 // ElevenLabs conversational-AI widget — renders its own floating chat button.
 // The <elevenlabs-convai> custom element is upgraded by the embed script.
-const AGENT_ID = 'agent_0201kgtssp28ekwa2wwfa8t4vxg4'
+const AGENT_ID = 'agent_2301kyr1y286fm3vryvpng4p8sa7'
 
 declare global {
   namespace JSX {

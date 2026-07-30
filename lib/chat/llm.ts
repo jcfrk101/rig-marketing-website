@@ -60,9 +60,10 @@ async function vertexModel() {
   const { createVertex } = await import('@ai-sdk/google-vertex')
   const vertex = createVertex({
     project: process.env.VERTEX_PROJECT || 'rig-production-337414',
-    location: process.env.VERTEX_LOCATION || 'us-central1',
+    // Current Gemini models are served from the "global" location.
+    location: process.env.VERTEX_LOCATION || 'global',
   })
-  return vertex(process.env.VERTEX_MODEL || 'gemini-2.0-flash')
+  return vertex(process.env.VERTEX_MODEL || 'gemini-2.5-flash')
 }
 
 export async function extract(userMessage: string, conversationContext: string): Promise<Extraction> {

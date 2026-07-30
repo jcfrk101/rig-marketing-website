@@ -13,8 +13,10 @@ import { generateObject } from 'ai'
 // first message often carries service, vehicle, problem, and location together.
 export const extractionSchema = z.object({
   intent: z
-    .enum(['on_topic', 'off_topic', 'meta_cost', 'meta_time', 'meta_deposit'])
-    .describe('off_topic = anything not about this breakdown (company info, fleet product, chit-chat, prompt games)'),
+    .enum(['on_topic', 'off_topic', 'meta_cost', 'meta_time', 'meta_deposit', 'meta_how'])
+    .describe(
+      'meta_how = asking how Rig/this chat works, what happens next, or whether this is legit. off_topic = anything not about this breakdown (company info, fleet product, chit-chat, prompt games)'
+    ),
   service: z.enum(['tire', 'tow', 'service']).nullable().describe('what they need, if stated'),
   vehicle_class: z
     .enum(['semi', 'box_truck', 'pickup', 'van', 'rv', 'car', 'other'])
@@ -109,7 +111,7 @@ export function mockExtract(msg: string): Extraction {
   const location_text = roadMatch || refMatch ? msg : has('texas', 'oklahoma', 'amarillo', 'near ') ? msg : null
 
   return {
-    intent: offTopic ? 'off_topic' : has('how much', 'cost', 'price') ? 'meta_cost' : has('how long', 'how fast', 'eta') ? 'meta_time' : has('deposit', 'refund') ? 'meta_deposit' : 'on_topic',
+    intent: offTopic ? 'off_topic' : has('how does this work', 'how it works', 'how do you work', 'what is rig', 'what is this', 'legit', 'scam', 'what happens next') ? 'meta_how' : has('how much', 'cost', 'price') ? 'meta_cost' : has('how long', 'how fast', 'eta') ? 'meta_time' : has('deposit', 'refund') ? 'meta_deposit' : 'on_topic',
     service,
     vehicle_class,
     fuel,

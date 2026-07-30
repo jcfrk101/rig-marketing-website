@@ -47,6 +47,23 @@ const META: Record<string, string> = {
     "Fair question — mechanics send you competing offers with exact prices before you commit, and there's a $10 dispatch deposit (applied to the job).",
   meta_time: 'Offers usually land within minutes of dispatch, by text.',
   meta_deposit: "The $10 deposit confirms the callout and is applied to the job — you're never charged for the service until it's done.",
+  meta_how:
+    "Quick version: you tell me what broke and where. A **human dispatcher** reviews it, then vetted diesel mechanics near you send **competing offers by text** — price and ETA up front. You pick one, they head your way, and you pay through Rig only when the work's done. We've been doing this for 6,000+ mechanics nationwide, 24/7.",
+}
+
+// Deterministic placeholder for the nearby-mechanic teaser (4–9), seeded from
+// the location so it's stable within a conversation.
+// TODO: replace with a real network-density lookup from rig-web-services.
+function mechanicsNearby(seedText: string): number {
+  let h = 0
+  for (const c of seedText) h = (h * 31 + c.charCodeAt(0)) >>> 0
+  return 4 + (h % 6)
+}
+
+const SERVICE_TEASER: Record<string, string> = {
+  tire: 'Tire techs run on our network around the clock — let’s get you matched.',
+  tow: 'Tow operators are on the network 24/7 — let’s get you matched.',
+  service: 'Mobile diesel mechanics are on the network 24/7 — let’s get you matched.',
 }
 
 // Question templates per slot, indexed by attempt (the fallback ladder).
@@ -196,7 +213,9 @@ function mergeExtraction(s: ChatState, e: Extraction): string[] {
       // In the real build this goes through Geocoding/Mile1 and confirm-back.
       s.location.resolved = e.location_text
       s.location.tier = 'good'
-      acks.push(`Locked in your location as: **${e.location_text}** — the dispatcher will see exactly that.`)
+      acks.push(
+        `Locked in your location as: **${e.location_text}** — the dispatcher will see exactly that. **${mechanicsNearby(e.location_text)} mechanics** on the Rig network are within range.`
+      )
     }
   }
   return acks
@@ -213,8 +232,10 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
   if (req.action) {
     const a = req.action
     userEcho = a.value
-    if (a.id.startsWith('svc_')) s.service = a.id.slice(4) as ChatState['service']
-    else if (a.id.startsWith('vc_')) s.vehicleClass = a.id.slice(3) as ChatState['vehicleClass']
+    if (a.id.startsWith('svc_')) {
+      s.service = a.id.slice(4) as ChatState['service']
+      replies.push(SERVICE_TEASER[s.service!])
+    } else if (a.id.startsWith('vc_')) s.vehicleClass = a.id.slice(3) as ChatState['vehicleClass']
     else if (a.id.startsWith('fuel_')) s.fuel = a.id.slice(5) as ChatState['fuel']
     else if (a.id === 'safe_shoulder') s.safety = 'shoulder'
     else if (a.id === 'safe_blocking') {
@@ -225,7 +246,23 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       s.location.lng = a.lng!
       s.location.resolved = a.value || `${a.lat.toFixed(4)}, ${a.lng!.toFixed(4)}`
       s.location.tier = 'gold'
-      replies.push('Location locked in. 📍')
+      replies.push(
+        `Location locked in. 📍 **${mechanicsNearby(s.location.resolved)} mechanics** on the Rig network are within range of your spot.`
+      )
+    } else if (a.id === 'photo_add') {
+      // Always-available photo — acknowledged in context of the active slot,
+      // and it substitutes for data where the contract allows.
+      s.photos += 1
+      if (activeBefore === 'tire_size' && !s.tireSize.value) {
+        replies.push("Perfect — a sidewall shot covers the tire size. 📷")
+      } else if (activeBefore === 'vehicle_detail') {
+        s.vehicle.attempts = MAX_ATTEMPTS // vision extraction fills this in the real build
+        replies.push("Got the photo — we'll pull the vehicle details from it. 📷")
+      } else if (activeBefore === 'location') {
+        replies.push('Photo received — surroundings help the dispatcher pin you down. 📷')
+      } else {
+        replies.push('Photo added — mechanics will see it with your request. 📷')
+      }
     } else if (a.id === 'loc_manual') {
       s.location.attempts += 1 // moves the ladder to the typed fallback
     } else if (a.id === 'photos_done') {

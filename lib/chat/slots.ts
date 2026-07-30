@@ -128,7 +128,7 @@ export function nextSlot(s: ChatState, photosOffered: boolean): SlotId {
     s.vehicle.attempts < MAX_ATTEMPTS
   )
     return 'vehicle_detail'
-  if (!photosOffered) return 'photos'
+  if (!photosOffered && s.photos === 0) return 'photos' // skip if they've already sent photos mid-flow
   if (!s.phone.verified) return 'phone'
   return 'summary'
 }

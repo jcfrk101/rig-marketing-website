@@ -304,6 +304,17 @@ export default function BreakdownChat() {
             ← Back to bigrig.app
           </a>
         )}
+
+        {/* Always-available photo escape hatch — photos substitute for typed
+            answers (tire size, vehicle plate, surroundings) per the contract. */}
+        {!busy && widget && !['photos', 'otp', 'summary', 'done', 'declined'].includes(widget.type) && (
+          <button
+            onClick={() => turn({ action: { id: 'photo_add', value: '📷 Photo sent' } })}
+            className="self-center rounded-full border border-white/20 px-4 py-1.5 text-[12.5px] text-white/60 transition hover:border-rig-green hover:text-rig-green"
+          >
+            📷 Send a photo instead
+          </button>
+        )}
         </div>
       </div>
     </div>

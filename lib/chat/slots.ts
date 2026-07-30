@@ -27,6 +27,7 @@ export interface ChatState {
     lng: number | null
     text: string | null
     resolved: string | null // human-readable confirmed location
+    state: string | null // 2-letter code when inferable — drives the directory link
     tier: Tier
     attempts: number
   }
@@ -48,7 +49,7 @@ export function initialState(): ChatState {
     tireSize: { value: null, attempts: 0 },
     problem: { description: null, followupsAsked: 0, drivable: null },
     safety: null,
-    location: { lat: null, lng: null, text: null, resolved: null, tier: 'missing', attempts: 0 },
+    location: { lat: null, lng: null, text: null, resolved: null, state: null, tier: 'missing', attempts: 0 },
     photos: 0,
     phone: { number: null, verified: false, otpSent: false },
     flags: [],

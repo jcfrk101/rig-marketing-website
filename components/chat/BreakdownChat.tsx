@@ -6,6 +6,15 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Widget } from '@/lib/chat/engine'
 import type { ChatState } from '@/lib/chat/slots'
+import { directoryStates, DIRECTORY_ROOT } from '@/data/directory'
+
+// Directory coverage by state code (ak/hi are gated out upstream).
+const COVERED = new Map(
+  directoryStates.map((s) => {
+    const code = s.href.match(/\/semi-truck-repair\/(\w\w)\//)?.[1] || ''
+    return [code, { name: s.label, href: s.href }] as const
+  })
+)
 
 interface Msg {
   role: 'bot' | 'user'
@@ -32,18 +41,21 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
   const [photoCount, setPhotoCount] = useState(0)
   const [otp, setOtp] = useState(['', '', '', ''])
   const [phoneError, setPhoneError] = useState(false)
+  const [failed, setFailed] = useState(false)
   const streamRef = useRef<HTMLDivElement>(null)
   const otpRefs = useRef<(HTMLInputElement | null)[]>([])
   const booted = useRef(false)
+  const lastPayload = useRef<Parameters<typeof turn>[0]>({})
 
   const scrollDown = () =>
     requestAnimationFrame(() => streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight, behavior: 'smooth' }))
 
-  async function turn(payload: { action?: { id: string; value?: string; lat?: number; lng?: number }; message?: string }) {
+  async function turn(payload: { action?: { id: string; value?: string; lat?: number; lng?: number }; message?: string }, isRetry = false) {
     setBusy(true)
     setWidget(null)
-    if (payload.message) setMsgs((m) => [...m, { role: 'user', text: payload.message! }])
-    if (payload.action?.value) setMsgs((m) => [...m, { role: 'user', text: payload.action!.value! }])
+    lastPayload.current = payload
+    if (!isRetry && payload.message) setMsgs((m) => [...m, { role: 'user', text: payload.message! }])
+    if (!isRetry && payload.action?.value) setMsgs((m) => [...m, { role: 'user', text: payload.action!.value! }])
     scrollDown()
     try {
       const res = await fetch('/api/chat', {
@@ -59,6 +71,11 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
       setInput('')
       setOtp(['', '', '', ''])
       setPhotoCount(0)
+      setFailed(false)
+    } catch {
+      // Never leave a stranded driver with a dead widget — offer a retry,
+      // and the phone line is always in the header.
+      setFailed(true)
     } finally {
       setBusy(false)
       scrollDown()
@@ -329,6 +346,18 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
           </a>
         )}
 
+        {!busy && failed && (
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-[13px] text-white/60">Connection hiccup — nothing lost.</p>
+            <button
+              onClick={() => turn(lastPayload.current, true)}
+              className="rounded-full bg-rig-green px-5 py-2.5 text-sm font-extrabold text-rig-navy-deep"
+            >
+              ↻ Retry
+            </button>
+          </div>
+        )}
+
         {/* Always-available photo escape hatch — photos substitute for typed
             answers (tire size, vehicle plate, surroundings) per the contract. */}
         {!busy && widget && !['photos', 'otp', 'summary', 'done', 'declined'].includes(widget.type) && (
@@ -341,6 +370,23 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
         )}
         </div>
       </div>
+
+      {/* Directory link — state-aware once the conversation knows where they are */}
+      <footer className="flex justify-center border-t border-white/10 bg-[#1a2127] px-4 py-2">
+        {(() => {
+          const covered = state?.location.state ? COVERED.get(state.location.state) : undefined
+          return (
+            <a
+              href={covered?.href || DIRECTORY_ROOT}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[12.5px] text-white/50 transition hover:text-rig-green"
+            >
+              Browse Rig mechanics{covered ? ` in ${covered.name}` : ''} →
+            </a>
+          )
+        })()}
+      </footer>
     </div>
   )
 }

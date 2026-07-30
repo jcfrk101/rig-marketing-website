@@ -207,6 +207,7 @@ function mergeExtraction(s: ChatState, e: Extraction): string[] {
     if (e.safety === 'blocking')
       acks.push("Understood — **if you're in danger, call 911 first.** I'm flagging this as urgent for dispatch.")
   }
+  if (e.location_state && !s.location.state) s.location.state = e.location_state.toLowerCase()
   if (e.location_text) {
     s.location.text = e.location_text
     if (e.location_specific) {

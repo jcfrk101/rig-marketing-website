@@ -41,6 +41,10 @@ export const extractionSchema = z.object({
     .boolean()
     .nullable()
     .describe('true only if location_text could be found on a map within ~5 miles (road + direction + a reference point)'),
+  location_state: z
+    .string()
+    .nullable()
+    .describe('2-letter lowercase US state code if confidently inferable from the location (e.g. "amarillo" → tx), else null'),
   ack: z.string().describe('ONE short empathetic sentence acknowledging what they said; no questions'),
 })
 export type Extraction = z.infer<typeof extractionSchema>
@@ -124,6 +128,7 @@ export function mockExtract(msg: string): Extraction {
     safety: has('shoulder', 'safe spot', 'rest area', 'parking lot', 'truck stop') ? 'shoulder' : has('blocking', 'in the lane', 'in a lane', 'middle of') ? 'blocking' : null,
     location_text,
     location_specific: !!(roadMatch && (refMatch || dirMatch)),
+    location_state: has('texas', 'amarillo', 'dallas', 'tucson') ? (has('tucson') ? 'az' : 'tx') : null,
     ack: 'Got it.',
   }
 }

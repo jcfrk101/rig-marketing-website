@@ -157,6 +157,20 @@ export default function BreakdownChat() {
                 {o.sub && <span className="block text-xs font-normal text-white/60">{o.sub}</span>}
               </button>
             ))}
+            {/* Freeform escape hatch: the engine parses any message against all
+                slots, so typing works at every step — chips are just faster. */}
+            <div className="mt-1 flex gap-2">
+              <input
+                placeholder="Or just type what's going on…"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && send()}
+                className="flex-1 rounded-xl border border-white/20 bg-[#1a2127] px-3.5 py-2.5 text-[14px] text-white outline-none focus:ring-2 focus:ring-rig-green"
+              />
+              <button onClick={send} className="w-11 rounded-xl bg-rig-green text-base font-extrabold text-rig-navy-deep">
+                ➤
+              </button>
+            </div>
           </div>
         )}
 

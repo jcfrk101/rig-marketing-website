@@ -27,6 +27,10 @@ export const extractionSchema = z.object({
   tire_size: z.string().nullable().describe('e.g. 295/75R22.5'),
   problem: z.string().nullable().describe('their description of what happened, cleaned up, else null'),
   drivable: z.boolean().nullable(),
+  safety: z
+    .enum(['shoulder', 'blocking'])
+    .nullable()
+    .describe('shoulder = safely off the road; blocking = in a lane / unsafe position'),
   location_text: z
     .string()
     .nullable()
@@ -115,6 +119,7 @@ export function mockExtract(msg: string): Extraction {
     tire_size: tireMatch ? tireMatch[0] : null,
     problem: service || has('broke', 'blew', 'leak', 'stuck', 'dead', 'won\'t') ? msg : null,
     drivable: has('drivable', 'can drive', 'limp') ? true : has('not drivable', "can't drive", 'cant drive', 'wont move') ? false : null,
+    safety: has('shoulder', 'safe spot', 'rest area', 'parking lot', 'truck stop') ? 'shoulder' : has('blocking', 'in the lane', 'in a lane', 'middle of') ? 'blocking' : null,
     location_text,
     location_specific: !!(roadMatch && (refMatch || dirMatch)),
     ack: 'Got it.',

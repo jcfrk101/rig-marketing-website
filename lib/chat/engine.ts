@@ -54,7 +54,7 @@ function question(slot: SlotId, s: ChatState): { replies: string[]; widget: Widg
   switch (slot) {
     case 'service':
       return {
-        replies: ["Hey — sorry you're stuck. Let's get you moving. **What do you need?**"],
+        replies: ["Hey — sorry you're stuck. Let's get you moving. **Tap one, or just tell me what happened.**"],
         widget: {
           type: 'chips',
           options: [
@@ -127,8 +127,9 @@ function question(slot: SlotId, s: ChatState): { replies: string[]; widget: Widg
       }
     }
     case 'vehicle_detail': {
+      const example = s.vehicleClass === 'rv' ? '2020 Winnebago Adventurer' : s.vehicleClass === 'pickup' || s.vehicleClass === 'van' ? '2021 Ford F-350' : '2019 Freightliner Cascadia'
       const ladder = [
-        '**Make and model?** e.g. 2019 Freightliner Cascadia — helps the mechanic bring the right parts.',
+        `**Make and model?** e.g. ${example} — helps the mechanic bring the right parts.`,
         "Not sure? What's on the grille — or snap a photo of the registration or door plate.",
       ]
       return {
@@ -184,6 +185,11 @@ function mergeExtraction(s: ChatState, e: Extraction): string[] {
   if (e.tire_size && !s.tireSize.value) s.tireSize.value = e.tire_size
   if (e.problem && !s.problem.description) s.problem.description = e.problem
   if (e.drivable !== null && s.problem.drivable === null) s.problem.drivable = e.drivable
+  if (e.safety && s.safety === null) {
+    s.safety = e.safety
+    if (e.safety === 'blocking')
+      acks.push("Understood — **if you're in danger, call 911 first.** I'm flagging this as urgent for dispatch.")
+  }
   if (e.location_text) {
     s.location.text = e.location_text
     if (e.location_specific) {

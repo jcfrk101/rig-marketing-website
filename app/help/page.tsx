@@ -9,5 +9,9 @@ export const metadata: Metadata = {
 }
 
 export default function HelpPage() {
-  return <BreakdownChat />
+  return (
+    <div className="h-dvh">
+      <BreakdownChat />
+    </div>
+  )
 }

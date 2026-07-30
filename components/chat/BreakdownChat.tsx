@@ -22,7 +22,7 @@ function Bold({ text }: { text: string }) {
   )
 }
 
-export default function BreakdownChat() {
+export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [widget, setWidget] = useState<Widget | null>(null)
   const [state, setState] = useState<ChatState | null>(null)
@@ -31,6 +31,7 @@ export default function BreakdownChat() {
   const [input, setInput] = useState('')
   const [photoCount, setPhotoCount] = useState(0)
   const [otp, setOtp] = useState(['', '', '', ''])
+  const [phoneError, setPhoneError] = useState(false)
   const streamRef = useRef<HTMLDivElement>(null)
   const otpRefs = useRef<(HTMLInputElement | null)[]>([])
   const booted = useRef(false)
@@ -98,8 +99,17 @@ export default function BreakdownChat() {
 
   const send = () => input.trim() && !busy && turn({ message: input.trim() })
 
+  const submitPhone = () => {
+    const digits = input.replace(/\D/g, '')
+    if (digits.length === 10 || (digits.length === 11 && digits.startsWith('1'))) {
+      turn({ action: { id: 'phone_number', value: input.trim() } })
+    } else {
+      setPhoneError(true)
+    }
+  }
+
   return (
-    <div className="flex h-dvh flex-col bg-rig-navy-deep text-white">
+    <div className="flex h-full flex-col bg-rig-navy-deep text-white">
       {/* Header */}
       <header className="flex items-center justify-center border-b border-white/10 bg-[#1a2127] px-4 py-3">
         <div className="flex w-full max-w-xl items-center gap-3">
@@ -118,6 +128,15 @@ export default function BreakdownChat() {
           <br />
           <b className="text-rig-green">1 (855) 744-2223</b>
         </a>
+        {onClose && (
+          <button
+            onClick={onClose}
+            aria-label="Minimize chat"
+            className="ml-1 grid h-8 w-8 place-items-center rounded-full text-lg text-white/60 transition hover:bg-white/10 hover:text-white"
+          >
+            ─
+          </button>
+        )}
         </div>
       </header>
 
@@ -217,22 +236,27 @@ export default function BreakdownChat() {
         )}
 
         {!busy && widget?.type === 'phone' && (
-          <div className="flex gap-2">
-            <input
-              inputMode="tel"
-              autoFocus
-              placeholder="(555) 123-4567"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && input.replace(/\D/g, '').length >= 10 && turn({ action: { id: 'phone_number', value: input } })}
-              className="flex-1 rounded-xl border border-white/20 bg-[#1a2127] px-3.5 py-3 text-[14.5px] text-white outline-none focus:ring-2 focus:ring-rig-green"
-            />
-            <button
-              onClick={() => input.replace(/\D/g, '').length >= 10 && turn({ action: { id: 'phone_number', value: input } })}
-              className="w-12 rounded-xl bg-rig-green text-lg font-extrabold text-rig-navy-deep"
-            >
-              ➤
-            </button>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex gap-2">
+              <input
+                inputMode="tel"
+                autoFocus
+                placeholder="(555) 123-4567"
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value)
+                  setPhoneError(false)
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && submitPhone()}
+                className={`flex-1 rounded-xl border bg-[#1a2127] px-3.5 py-3 text-[14.5px] text-white outline-none focus:ring-2 ${phoneError ? 'border-[#ff7a6b] focus:ring-[#ff7a6b]' : 'border-white/20 focus:ring-rig-green'}`}
+              />
+              <button onClick={submitPhone} className="w-12 rounded-xl bg-rig-green text-lg font-extrabold text-rig-navy-deep">
+                ➤
+              </button>
+            </div>
+            {phoneError && (
+              <p className="text-[12.5px] text-[#ff9a8d]">That doesn&apos;t look complete — we need a 10-digit mobile number to text your offers to.</p>
+            )}
           </div>
         )}
 

@@ -13,7 +13,7 @@ import {
   nextSlot,
 } from './slots'
 import { Extraction, analyzePhotos, extract } from './llm'
-import { resolveLocation } from './geo'
+import { resolveLocation, reverseGeocode } from './geo'
 
 export type Widget =
   | { type: 'chips'; options: { id: string; label: string; sub?: string }[] }
@@ -74,11 +74,16 @@ const SERVICE_TEASER: Record<string, string> = {
 }
 
 // Question templates per slot, indexed by attempt (the fallback ladder).
-function question(slot: SlotId, s: ChatState): { replies: string[]; widget: Widget } {
+// `reask` = a freeform answer didn't fill this slot — clarify, don't repeat.
+function question(slot: SlotId, s: ChatState, reask = false): { replies: string[]; widget: Widget } {
   switch (slot) {
     case 'service':
       return {
-        replies: ["Hey — sorry you're stuck. Let's get you moving. **Tap one, or just tell me what happened.**"],
+        replies: [
+          reask
+            ? '**Which of these fits best?** Tire trouble, a tow, or a mechanic out to you?'
+            : "Hey — sorry you're stuck. Let's get you moving. **Tap one, or just tell me what happened.**",
+        ],
         widget: {
           type: 'chips',
           options: [
@@ -132,18 +137,28 @@ function question(slot: SlotId, s: ChatState): { replies: string[]; widget: Widg
     case 'location': {
       // Confirm-back: geocoded candidates get tapped, not re-described.
       if (s.location.candidates?.length) {
+        const single = s.location.candidates.length === 1
         return {
-          replies: ['**Which of these matches where you are?**'],
+          replies: [
+            single
+              ? `Looks like you're at **${s.location.candidates[0].name}** — ${s.location.candidates[0].address}. Right?`
+              : '**Which of these matches where you are?**',
+          ],
           widget: {
             type: 'chips',
-            options: [
-              ...s.location.candidates.map((c, i) => ({
-                id: `loc_pick_${i}`,
-                label: `📍 ${c.name}`,
-                sub: c.address,
-              })),
-              { id: 'loc_none', label: 'None of these' },
-            ],
+            options: single
+              ? [
+                  { id: 'loc_pick_0', label: "✓ That's right" },
+                  { id: 'loc_none', label: "Not quite — I'll describe it" },
+                ]
+              : [
+                  ...s.location.candidates.map((c, i) => ({
+                    id: `loc_pick_${i}`,
+                    label: `📍 ${c.name}`,
+                    sub: c.address,
+                  })),
+                  { id: 'loc_none', label: 'None of these' },
+                ],
           },
         }
       }
@@ -227,7 +242,10 @@ function mergeExtraction(s: ChatState, e: Extraction): string[] {
   if (e.model && !s.vehicle.model) s.vehicle.model = e.model
   if (e.year && !s.vehicle.year) s.vehicle.year = e.year
   if (e.tire_size && !s.tireSize.value) s.tireSize.value = e.tire_size
-  if (e.problem && !s.problem.description) s.problem.description = e.problem
+  // Contentless phrases ("broke down") don't satisfy the problem slot —
+  // the model is told to null them, this is the code backstop.
+  if (e.problem && e.problem.trim().split(/\s+/).length >= 3 && !s.problem.description)
+    s.problem.description = e.problem
   if (e.drivable !== null && s.problem.drivable === null) s.problem.drivable = e.drivable
   if (e.safety && s.safety === null) {
     s.safety = e.safety
@@ -260,13 +278,14 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       s.safety = 'blocking'
       replies.push("Understood — **if you're in danger, call 911 first.** I'm flagging this as urgent for dispatch.")
     } else if (a.id === 'loc_share' && a.lat !== undefined && a.lng !== undefined) {
+      // GPS is precise but not infallible (wrong side of the interchange,
+      // stale fix) — confirm it back in words before locking.
       s.location.lat = a.lat
       s.location.lng = a.lng!
-      s.location.resolved = a.value || `${a.lat.toFixed(4)}, ${a.lng!.toFixed(4)}`
-      s.location.tier = 'gold'
-      replies.push(
-        `Location locked in. 📍 **${mechanicsNearby(s.location.resolved)} mechanics** on the Rig network are within range of your spot.`
-      )
+      const rev = await reverseGeocode(a.lat, a.lng!)
+      s.location.candidates = [
+        { name: rev.address.split(',')[0], address: rev.address, lat: a.lat, lng: a.lng!, state: rev.state },
+      ]
     } else if (a.id === 'photo_ok') {
       // Driver confirmed the vision read — nothing to change, move on.
     } else if (a.id === 'photo_note') {
@@ -407,7 +426,8 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
   }
 
   const slot = nextSlot(s, photosOffered)
-  const q = question(slot, s)
+  // Freeform answer that didn't move the active slot → clarify, don't repeat.
+  const q = question(slot, s, !!req.message && slot === activeBefore)
   // Avoid repeating the identical question when a meta/off-topic answer was given:
   replies.push(...q.replies)
   return { replies, widget: q.widget, state: s, photosOffered, userEcho }

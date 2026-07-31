@@ -128,7 +128,8 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
     if (!navigator.geolocation) return turn({ action: { id: 'loc_manual', value: 'Type it instead' } })
     setBusy(true)
     navigator.geolocation.getCurrentPosition(
-      (pos) =>
+      (pos) => {
+        geoBias.current = { lat: pos.coords.latitude, lng: pos.coords.longitude }
         turn({
           action: {
             id: 'loc_share',
@@ -136,7 +137,8 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
           },
-        }),
+        })
+      },
       () => turn({ action: { id: 'loc_manual', value: "Couldn't share — I'll type it" } })
     )
   }

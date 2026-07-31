@@ -42,3 +42,19 @@ body {
     @apply mt-3 text-3xl font-bold tracking-tight text-rig-navy sm:text-4xl;
   }
 }
+
+/* Breakdown chat: staggered entrance for widget buttons (delay set inline per index). */
+@keyframes chip-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.chip-in {
+  animation: chip-in 0.25s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chip-in {
+    animation: none;
+  }
+}

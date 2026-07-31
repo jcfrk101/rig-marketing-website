@@ -250,11 +250,12 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
         {/* Active widget */}
         {!busy && widget?.type === 'chips' && (
           <div className="flex flex-col gap-2">
-            {widget.options.map((o) => (
+            {widget.options.map((o, i) => (
               <button
                 key={o.id}
                 onClick={() => turn({ action: { id: o.id, value: o.label.replace(/^[^\w]+/, '') } })}
-                className="w-full rounded-full border-[1.5px] border-rig-green px-4 py-3 text-center text-[15px] font-bold text-rig-green transition hover:bg-rig-green/10"
+                style={{ animationDelay: `${i * 130}ms` }}
+                className="chip-in w-full rounded-full border-[1.5px] border-rig-green px-4 py-3 text-center text-[15px] font-bold text-rig-green transition hover:bg-rig-green/10"
               >
                 {o.label}
                 {o.sub && <span className="block text-xs font-normal text-white/60">{o.sub}</span>}
@@ -262,7 +263,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
             ))}
             {/* Freeform escape hatch: the engine parses any message against all
                 slots, so typing works at every step — chips are just faster. */}
-            <div className="mt-1 flex gap-2">
+            <div className="mt-1 flex gap-2 chip-in" style={{ animationDelay: `${widget.options.length * 130}ms` }}>
               <input
                 placeholder="Or just type what's going on…"
                 value={input}
@@ -281,13 +282,14 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
           <div className="flex flex-col gap-2">
             <button
               onClick={shareLocation}
-              className="w-full rounded-full bg-rig-green px-4 py-3 text-[15px] font-extrabold text-rig-navy-deep hover:bg-rig-green-dark"
+              className="chip-in w-full rounded-full bg-rig-green px-4 py-3 text-[15px] font-extrabold text-rig-navy-deep hover:bg-rig-green-dark"
             >
               📍 Share my location
             </button>
             <button
               onClick={() => turn({ action: { id: 'loc_manual', value: 'Type it instead' } })}
-              className="text-[13px] text-white/60 underline"
+              style={{ animationDelay: '130ms' }}
+              className="chip-in text-[13px] text-white/60 underline"
             >
               Type it instead
             </button>

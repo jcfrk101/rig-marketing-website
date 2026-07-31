@@ -269,7 +269,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && send()}
-                className="flex-1 rounded-xl border border-white/20 bg-[#1a2127] px-3.5 py-2.5 text-[14px] text-white outline-none focus:ring-2 focus:ring-rig-green"
+                className="flex-1 rounded-xl border border-white/20 bg-[#1a2127] px-3.5 py-2.5 text-base text-white outline-none sm:text-[14px] focus:ring-2 focus:ring-rig-green"
               />
               <button onClick={send} className="w-11 rounded-xl bg-rig-green text-base font-extrabold text-rig-navy-deep">
                 ➤
@@ -333,7 +333,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
                   setPhoneError(false)
                 }}
                 onKeyDown={(e) => e.key === 'Enter' && submitPhone()}
-                className={`flex-1 rounded-xl border bg-[#1a2127] px-3.5 py-3 text-[14.5px] text-white outline-none focus:ring-2 ${phoneError ? 'border-[#ff7a6b] focus:ring-[#ff7a6b]' : 'border-white/20 focus:ring-rig-green'}`}
+                className={`flex-1 rounded-xl border bg-[#1a2127] px-3.5 py-3 text-base text-white outline-none sm:text-[14.5px] focus:ring-2 ${phoneError ? 'border-[#ff7a6b] focus:ring-[#ff7a6b]' : 'border-white/20 focus:ring-rig-green'}`}
               />
               <button onClick={submitPhone} className="w-12 rounded-xl bg-rig-green text-lg font-extrabold text-rig-navy-deep">
                 ➤
@@ -400,7 +400,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
                   send()
                 }
               }}
-              className="flex-1 resize-none rounded-xl border border-white/20 bg-[#1a2127] px-3.5 py-3 text-[14.5px] text-white outline-none focus:ring-2 focus:ring-rig-green"
+              className="flex-1 resize-none rounded-xl border border-white/20 bg-[#1a2127] px-3.5 py-3 text-base text-white outline-none sm:text-[14.5px] focus:ring-2 focus:ring-rig-green"
             />
             <button onClick={send} className="w-12 rounded-xl bg-rig-green text-lg font-extrabold text-rig-navy-deep">
               ➤
@@ -437,11 +437,12 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
           </button>
         )}
 
+        {/* No `capture` attribute: phones then offer the native chooser
+            (photo library AND camera) instead of forcing the camera. */}
         <input
           ref={fileRef}
           type="file"
           accept="image/*"
-          capture="environment"
           multiple
           hidden
           onChange={(e) => onFilesPicked(e.target.files)}

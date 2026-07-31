@@ -65,6 +65,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
     if (!isRetry && payload.photos) setMsgs((m) => [...m, { role: 'user', text: `📷 ${payload.photos!.length} photo${payload.photos!.length > 1 ? 's' : ''} sent` }])
     scrollDown()
     try {
+      const started = Date.now()
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -73,7 +74,18 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
       const data = await res.json()
       setState(data.state)
       setPhotosOffered(data.photosOffered)
-      setMsgs((m) => [...m, ...data.replies.map((t: string) => ({ role: 'bot' as const, text: t }))])
+      // Reveal replies at reading cadence — typing dots stay visible between
+      // bubbles (busy is still true), and the widget lands after the text.
+      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+      const alreadyWaited = Date.now() - started
+      for (let i = 0; i < data.replies.length; i++) {
+        const text: string = data.replies[i]
+        const d = i === 0 && alreadyWaited > 900 ? 150 : Math.min(1300, 300 + text.length * 9)
+        await sleep(d)
+        setMsgs((m) => [...m, { role: 'bot', text }])
+        scrollDown()
+      }
+      if (data.replies.length) await sleep(350)
       setWidget(data.widget)
       setInput('')
       setOtp(['', '', '', ''])

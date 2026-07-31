@@ -24,14 +24,24 @@ function stateFrom(addr: string): string | null {
   return m ? m[1].toLowerCase() : null
 }
 
-export async function resolveLocation(query: string, biasState?: string | null): Promise<GeoCandidate[]> {
+export async function resolveLocation(
+  query: string,
+  biasState?: string | null,
+  biasPoint?: { lat: number; lng: number } | null
+): Promise<GeoCandidate[]> {
   if (!KEY()) return []
   const q = biasState && !query.toLowerCase().includes(biasState) ? `${query} ${biasState.toUpperCase()}` : query
+  // ~80km radius bias: strong enough to rank the right Pilot first, weak
+  // enough that an explicit "in Tucson" in the query still wins.
+  const placesBias = biasPoint ? `&location=${biasPoint.lat},${biasPoint.lng}&radius=80000` : ''
+  const geocodeBias = biasPoint
+    ? `&bounds=${biasPoint.lat - 0.7},${biasPoint.lng - 0.7}|${biasPoint.lat + 0.7},${biasPoint.lng + 0.7}`
+    : ''
 
   // Places Text Search — best for named places (truck stops, exits, businesses).
   try {
     const res = await fetch(
-      `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(q)}&region=us&key=${KEY()}`,
+      `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(q)}${placesBias}&region=us&key=${KEY()}`,
       { cache: 'no-store' }
     )
     const data = await res.json()
@@ -51,7 +61,7 @@ export async function resolveLocation(query: string, biasState?: string | null):
   // Geocoding API — addresses, towns, intersections.
   try {
     const res = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&region=us&key=${KEY()}`,
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}${geocodeBias}&region=us&key=${KEY()}`,
       { cache: 'no-store' }
     )
     const data = await res.json()

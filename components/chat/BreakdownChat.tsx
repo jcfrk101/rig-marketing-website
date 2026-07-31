@@ -49,6 +49,9 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
   const otpRefs = useRef<(HTMLInputElement | null)[]>([])
   const booted = useRef(false)
   const lastPayload = useRef<Parameters<typeof turn>[0]>({})
+  // Approximate position for geocode biasing — read ONLY if the browser says
+  // permission is already granted (permissions.query never triggers a prompt).
+  const geoBias = useRef<{ lat: number; lng: number } | null>(null)
 
   const scrollDown = () =>
     requestAnimationFrame(() => streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight, behavior: 'smooth' }))
@@ -65,7 +68,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ state, photosOffered, ...payload }),
+        body: JSON.stringify({ state, photosOffered, bias: geoBias.current, ...payload }),
       })
       const data = await res.json()
       setState(data.state)
@@ -89,6 +92,23 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
     if (booted.current) return // StrictMode double-mount guard
     booted.current = true
     turn({}) // opening turn
+    // Silent geocode bias: only when permission is ALREADY granted — never prompts.
+    if (navigator.permissions?.query) {
+      navigator.permissions
+        .query({ name: 'geolocation' })
+        .then((p) => {
+          if (p.state === 'granted') {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                geoBias.current = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+              },
+              () => {},
+              { enableHighAccuracy: false, maximumAge: 300000, timeout: 8000 }
+            )
+          }
+        })
+        .catch(() => {})
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

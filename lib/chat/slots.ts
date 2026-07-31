@@ -11,6 +11,9 @@ export type Fuel = 'diesel' | 'gas'
 export type ServiceType = 'tire' | 'tow' | 'service'
 
 export interface ChatState {
+  // Minted at conversation birth — the idempotency key for partial-lead
+  // upserts (create on OTP verify, update per turn, finalize on submit).
+  conversationId: string
   // Eligibility: diesel-only except RVs (gas OK, but tagged special). Cars never.
   vehicleClass: VehicleClass | null
   fuel: Fuel | null
@@ -55,6 +58,7 @@ export const MAX_ATTEMPTS = 3
 
 export function initialState(): ChatState {
   return {
+    conversationId: crypto.randomUUID(),
     vehicleClass: null,
     fuel: null,
     declined: false,

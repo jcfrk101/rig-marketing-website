@@ -337,6 +337,7 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
     s.name = null
     s.nameAsked = false
   }
+  if (!s.conversationId) s.conversationId = crypto.randomUUID()
   let photosOffered = req.photosOffered ?? false
   const replies: string[] = []
   let userEcho: string | undefined

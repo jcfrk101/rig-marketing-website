@@ -27,7 +27,12 @@ export const extractionSchema = z.object({
   model: z.string().nullable(),
   year: z.string().nullable(),
   tire_size: z.string().nullable().describe('e.g. 295/75R22.5'),
-  problem: z.string().nullable().describe('their description of what happened, cleaned up, else null'),
+  problem: z
+    .string()
+    .nullable()
+    .describe(
+      "their description of what happened, cleaned up. null if they gave no actual detail — contentless phrases like 'broke down', 'need help', 'truck died' are NOT a problem description"
+    ),
   drivable: z.boolean().nullable(),
   safety: z
     .enum(['shoulder', 'blocking'])

@@ -24,6 +24,26 @@ function stateFrom(addr: string): string | null {
   return m ? m[1].toLowerCase() : null
 }
 
+// Reverse geocode a GPS share so the driver can confirm it in words.
+export async function reverseGeocode(lat: number, lng: number): Promise<{ address: string; state: string | null }> {
+  const fallback = { address: `${lat.toFixed(4)}, ${lng.toFixed(4)}`, state: null }
+  if (!KEY()) return fallback
+  try {
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${KEY()}`,
+      { cache: 'no-store' }
+    )
+    const data = await res.json()
+    if (data.status === 'OK' && data.results?.length) {
+      const addr = data.results[0].formatted_address
+      return { address: addr, state: stateFrom(addr) }
+    }
+  } catch {
+    // fall through
+  }
+  return fallback
+}
+
 export async function resolveLocation(
   query: string,
   biasState?: string | null,

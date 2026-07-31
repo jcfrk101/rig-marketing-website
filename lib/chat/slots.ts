@@ -98,7 +98,10 @@ export function vehicleTier(s: ChatState): Tier {
 }
 
 export function locationTier(s: ChatState): Tier {
-  if (s.location.lat !== null) return 'gold'
+  // Gold requires CONFIRMED coordinates — a raw GPS share awaiting its
+  // confirm-back (lat set, resolved null) does not count yet, and unconfirmed
+  // coords still bias any typed correction's geocoding.
+  if (s.location.lat !== null && s.location.resolved) return 'gold'
   if (s.location.resolved) return 'good'
   if (s.location.text) return 'weak'
   return 'missing'
@@ -131,7 +134,7 @@ export function nextSlot(s: ChatState, photosOffered: boolean): SlotId {
   // Phone comes right after the problem: if the driver gives up mid-chat,
   // a verified number means dispatch can still call them back.
   if (!s.phone.verified) return 'phone'
-  if (s.safety === null) return 'safety'
+  // Safety is never asked — but volunteered "blocking a lane" still flags URGENT.
   if (locationTier(s) === 'missing' || (locationTier(s) === 'weak' && s.location.attempts < MAX_ATTEMPTS))
     return 'location'
   if (s.service === 'tire' && s.tireSize.value === null && s.tireSize.attempts < MAX_ATTEMPTS && s.photos === 0)

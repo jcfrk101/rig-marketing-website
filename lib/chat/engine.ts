@@ -48,14 +48,33 @@ export interface TurnResponse {
 
 const REDIRECT = "This chat is just for getting you unstuck — for everything else, head to bigrig.app."
 const META: Record<string, string> = {
+  // Pricing rule (voice-agent prompt): never quote repair prices — mechanics
+  // price after details are confirmed. The $10 deposit is the only number.
   meta_cost:
-    "Fair question — mechanics send you competing offers with exact prices before you commit, and there's a $10 dispatch deposit (applied to the job).",
-  meta_time: 'Offers usually land within minutes of dispatch, by text.',
-  meta_deposit: "The $10 deposit confirms the callout and is applied to the job — you're never charged for the service until it's done.",
+    'Pricing comes from the mechanics themselves — once your details go out, they respond with exact price and ETA offers by text, and you pick. The only fixed number is the **$10 expedited-service deposit**, which is applied toward your final balance.',
+  meta_time: 'On average you hear back within **five to ten minutes** of dispatch, by text.',
+  meta_deposit:
+    "The $10 deposit is for expedited service and is **applied toward your final balance**. It's refundable if we can't dispatch a mechanic for your request — not if you decline offers over price or ETA after dispatch starts.",
   meta_how:
     "Quick version: you tell me what broke and where. A **human dispatcher** reviews it, then vetted diesel mechanics near you send **competing offers by text** — price and ETA up front. You pick one, they head your way, and you pay through Rig only when the work's done. We've been doing this for 6,000+ mechanics nationwide, 24/7.",
   meta_who:
     "Honest answer: I'm an AI chat bot 🤖 — but I'm just the intake. Once I've got the important details, a **human dispatcher** takes over and routes your request to several mechanics close to you. The robot part is only so you get help faster at 2am.",
+  meta_coverage: 'Yes — **we have mechanics wherever you need them**, nationwide.',
+  meta_insurance:
+    "We don't bill insurance or warranties directly, but we can send you an itemized invoice to submit for reimbursement.",
+}
+
+// Services we explicitly don't offer (docs/voice-agent-prompt-v3.05.txt).
+// Refusals redirect to what we CAN do — the chat stays open.
+const REFUSALS: Record<string, string> = {
+  tire_patch: "We don't patch tires — we **replace** them, which gets you rolling safer. Want a replacement instead?",
+  windshield: "Windshield replacement isn't something we do — sorry. If anything mechanical, tire, or tow comes up, we've got you.",
+  locksmith: "Lockouts aren't something we handle — sorry. If anything mechanical, tire, or tow comes up, we've got you.",
+  gas_car: "We're diesel truck and RV specialists — for a gas car we can only help with a winch-out if you're stuck.",
+  interior_rv: "Interior RV repairs aren't something we do — our RV work is mechanical: engine, chassis, leveling, slideouts.",
+  rv_roof: "RV roof leaks aren't something we handle — our RV work is mechanical: engine, chassis, leveling, slideouts.",
+  rv_ac_fridge: "RV air conditioners and refrigerators aren't something we service — our RV work is mechanical.",
+  body_repair: "Body work isn't something we do — we keep trucks *running*. If anything mechanical, tire, or tow comes up, we've got you.",
 }
 
 // Deterministic placeholder for the nearby-mechanic teaser (4–9), seeded from
@@ -172,6 +191,34 @@ function question(slot: SlotId, s: ChatState, reask = false): { replies: string[
         widget: s.location.attempts === 0 ? { type: 'location' } : { type: 'text', placeholder: 'e.g. I-40 west, exit 195, or the Pilot in Tucson' },
       }
     }
+    case 'tire_position':
+      return {
+        replies: ['**Which tire is it?**'],
+        widget: {
+          type: 'chips',
+          options: [
+            { id: 'tirepos_steer', label: 'Steer (front)' },
+            { id: 'tirepos_drive', label: 'Drive' },
+            { id: 'tirepos_trailer', label: 'Trailer' },
+          ],
+        },
+      }
+    case 'tire_spare':
+      return {
+        replies: ['**Do you have a spare?**'],
+        widget: {
+          type: 'chips',
+          options: [
+            { id: 'spare_yes', label: 'Yes, got a spare' },
+            { id: 'spare_no', label: 'No spare' },
+          ],
+        },
+      }
+    case 'tow_detail':
+      return {
+        replies: ['**Where should it be towed** — and is there a trailer attached (loaded or empty)?'],
+        widget: { type: 'text', placeholder: 'e.g. TA shop in Amarillo — loaded trailer attached' },
+      }
     case 'tire_size': {
       const ladder = [
         "**What size tire?** It's on the sidewall — e.g. 295/75R22.5. A photo of the sidewall works too.",
@@ -225,6 +272,16 @@ export function summaryData(s: ChatState): Record<string, string> {
     Service: svc + (s.vehicleClass === 'rv' ? ' (RV)' : ''),
     Vehicle: veh,
     Problem: s.problem.description || '—',
+    ...(s.service === 'tire'
+      ? {
+          Tire: [s.tirePosition, s.tireSpare === true ? 'has spare' : s.tireSpare === false ? 'no spare' : null, s.tireSize.value]
+            .filter(Boolean)
+            .join(' · ') || '—',
+        }
+      : {}),
+    ...(s.service === 'tow'
+      ? { Tow: [s.tow.dropoff && `to ${s.tow.dropoff}`, s.tow.trailerInfo].filter(Boolean).join(' · ') || '—' }
+      : {}),
     Location: s.location.resolved || s.location.text || '— (dispatcher will confirm by phone)',
     Photos: s.photos ? `${s.photos}${s.photoSummary ? ` — ${s.photoSummary}` : ''}` : 'none',
     ...(s.photoNotes ? { Notes: s.photoNotes } : {}),
@@ -242,6 +299,11 @@ function mergeExtraction(s: ChatState, e: Extraction): string[] {
   if (e.model && !s.vehicle.model) s.vehicle.model = e.model
   if (e.year && !s.vehicle.year) s.vehicle.year = e.year
   if (e.tire_size && !s.tireSize.value) s.tireSize.value = e.tire_size
+  if (e.tire_position && !s.tirePosition) s.tirePosition = e.tire_position
+  if (e.has_spare !== null && s.tireSpare === null) s.tireSpare = e.has_spare
+  if (e.tow_dropoff && !s.tow.dropoff) s.tow.dropoff = e.tow_dropoff
+  if (e.trailer_info && !s.tow.trailerInfo) s.tow.trailerInfo = e.trailer_info
+  if (e.wants_winch) s.wantsWinch = true
   // Contentless phrases ("broke down") don't satisfy the problem slot —
   // the model is told to null them, this is the code backstop.
   if (e.problem && e.problem.trim().split(/\s+/).length >= 3 && !s.problem.description)
@@ -259,6 +321,11 @@ function mergeExtraction(s: ChatState, e: Extraction): string[] {
 
 export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
   const s: ChatState = req.state ?? initialState()
+  // Back-compat: in-flight sessions may predate newer slots.
+  if (s.tirePosition === undefined) s.tirePosition = null
+  if (s.tireSpare === undefined) s.tireSpare = null
+  if (!s.tow) s.tow = { dropoff: null, trailerInfo: null, attempts: 0 }
+  if (s.wantsWinch === undefined) s.wantsWinch = false
   let photosOffered = req.photosOffered ?? false
   const replies: string[] = []
   let userEcho: string | undefined
@@ -273,6 +340,9 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       replies.push(SERVICE_TEASER[s.service!])
     } else if (a.id.startsWith('vc_')) s.vehicleClass = a.id.slice(3) as ChatState['vehicleClass']
     else if (a.id.startsWith('fuel_')) s.fuel = a.id.slice(5) as ChatState['fuel']
+    else if (a.id.startsWith('tirepos_')) s.tirePosition = a.id.slice(8)
+    else if (a.id === 'spare_yes') s.tireSpare = true
+    else if (a.id === 'spare_no') s.tireSpare = false
     else if (a.id === 'safe_shoulder') s.safety = 'shoulder'
     else if (a.id === 'safe_blocking') {
       s.safety = 'blocking'
@@ -377,11 +447,20 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       replies.push(REDIRECT)
     } else if (e.intent.startsWith('meta_')) {
       replies.push(META[e.intent])
+      // Meta questions can still carry facts ("do you have anyone near
+      // Amarillo?" IS their location) — capture silently, per the voice rules.
+      mergeExtraction(s, e)
     } else {
       const acks = mergeExtraction(s, e)
-      // Always lead with the model's situational acknowledgment — the questions
-      // stay templated (drift-proof), but the transitions sound human.
-      if (e.ack) replies.push(e.ack)
+      // Refusal gate: only explicitly not-offered services get refused, with a
+      // redirect to what we CAN do. Unfamiliar repairs are never refused.
+      if (e.service_refused && REFUSALS[e.service_refused]) {
+        replies.push(REFUSALS[e.service_refused])
+      } else if (e.ack) {
+        // Situational acknowledgment — questions stay templated (drift-proof),
+        // but the transitions sound human.
+        replies.push(e.ack)
+      }
       replies.push(...acks)
       // Location resolution: geocode the model's cleaned-up query and let the
       // driver confirm a concrete candidate. Falls back to trusting specific
@@ -412,6 +491,7 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
         if (activeBefore === 'location') s.location.attempts += 1
         if (activeBefore === 'vehicle_detail') s.vehicle.attempts += 1
         if (activeBefore === 'tire_size') s.tireSize.attempts += 1
+        if (activeBefore === 'tow_detail') s.tow.attempts += 1
       }
       // Ladder exhausted → accept partial with honest handoff line.
       if (activeBefore === 'location' && s.location.attempts >= MAX_ATTEMPTS && locationTier(s) !== 'gold' && locationTier(s) !== 'good') {

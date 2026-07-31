@@ -38,11 +38,9 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
   const [photosOffered, setPhotosOffered] = useState(false)
   const [busy, setBusy] = useState(false)
   const [input, setInput] = useState('')
-  // Real files from the camera/gallery. Client-side only for now: previews and
-  // counts are real, but bytes stay in the browser until the upload backend
-  // (GCS via rig-web-services) exists.
+  // Photos are downscaled client-side, sent for AI analysis, and discarded
+  // server-side — object URLs here are only the preview thumbnails.
   const [photos, setPhotos] = useState<{ name: string; url: string }[]>([])
-  const pendingPickAction = useRef<'widget' | 'pill'>('widget')
   const fileRef = useRef<HTMLInputElement>(null)
   const [otp, setOtp] = useState(['', '', '', ''])
   const [phoneError, setPhoneError] = useState(false)
@@ -55,12 +53,13 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
   const scrollDown = () =>
     requestAnimationFrame(() => streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight, behavior: 'smooth' }))
 
-  async function turn(payload: { action?: { id: string; value?: string; lat?: number; lng?: number; count?: number }; message?: string }, isRetry = false) {
+  async function turn(payload: { action?: { id: string; value?: string; lat?: number; lng?: number; count?: number }; message?: string; photos?: string[] }, isRetry = false) {
     setBusy(true)
     setWidget(null)
     lastPayload.current = payload
     if (!isRetry && payload.message) setMsgs((m) => [...m, { role: 'user', text: payload.message! }])
     if (!isRetry && payload.action?.value) setMsgs((m) => [...m, { role: 'user', text: payload.action!.value! }])
+    if (!isRetry && payload.photos) setMsgs((m) => [...m, { role: 'user', text: `📷 ${payload.photos!.length} photo${payload.photos!.length > 1 ? 's' : ''} sent` }])
     scrollDown()
     try {
       const res = await fetch('/api/chat', {
@@ -120,17 +119,34 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
 
   const send = () => input.trim() && !busy && turn({ message: input.trim() })
 
-  function onFilesPicked(files: FileList | null) {
-    if (!files || files.length === 0) return
-    const added = [...files].map((f) => ({ name: f.name, url: URL.createObjectURL(f) }))
-    setPhotos((p) => [...p, ...added])
-    if (pendingPickAction.current === 'pill') {
-      turn({ action: { id: 'photo_add', value: `📷 ${added.length > 1 ? added.length + ' photos' : 'Photo'} sent`, count: added.length } })
-    }
+  // Downscale to ~1280px JPEG so multi-photo payloads stay small.
+  function downscale(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        const scale = Math.min(1, 1280 / Math.max(img.width, img.height))
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+        URL.revokeObjectURL(url)
+        resolve(canvas.toDataURL('image/jpeg', 0.8))
+      }
+      img.onerror = reject
+      img.src = url
+    })
   }
 
-  function openPicker(source: 'widget' | 'pill') {
-    pendingPickAction.current = source
+  async function onFilesPicked(files: FileList | null) {
+    if (!files || files.length === 0) return
+    const list = [...files]
+    setPhotos((p) => [...p, ...list.map((f) => ({ name: f.name, url: URL.createObjectURL(f) }))])
+    const dataUrls = await Promise.all(list.map(downscale))
+    turn({ photos: dataUrls })
+  }
+
+  function openPicker() {
     if (fileRef.current) fileRef.current.value = ''
     fileRef.current?.click()
   }
@@ -254,7 +270,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
                 <img key={i} src={p.url} alt={p.name} className="h-[72px] w-[72px] rounded-xl border border-white/15 object-cover" />
               ))}
               <button
-                onClick={() => openPicker('widget')}
+                onClick={openPicker}
                 className="h-[72px] w-[72px] rounded-xl border-[1.5px] border-dashed border-rig-green text-2xl text-rig-green"
                 aria-label="Add photo"
               >
@@ -262,10 +278,10 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
               </button>
             </div>
             <button
-              onClick={() => turn({ action: { id: 'photos_done', value: photos.length ? `📷 ${photos.length} photo${photos.length > 1 ? 's' : ''} added` : 'Skip photos', count: photos.length } })}
+              onClick={() => turn({ action: { id: 'photos_done', value: 'Skip photos', count: photos.length } })}
               className="w-full rounded-full bg-rig-green px-4 py-3 text-[15px] font-extrabold text-rig-navy-deep hover:bg-rig-green-dark"
             >
-              {photos.length ? 'Done — continue' : 'Skip photos'}
+              Skip photos
             </button>
           </div>
         )}
@@ -380,7 +396,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
             answers (tire size, vehicle plate, surroundings) per the contract. */}
         {!busy && widget && !['photos', 'otp', 'summary', 'done', 'declined'].includes(widget.type) && (
           <button
-            onClick={() => openPicker('pill')}
+            onClick={openPicker}
             className="self-center rounded-full border border-white/20 px-4 py-1.5 text-[12.5px] text-white/60 transition hover:border-rig-green hover:text-rig-green"
           >
             📷 Send a photo instead

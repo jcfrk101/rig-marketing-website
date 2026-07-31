@@ -100,6 +100,54 @@ export async function extract(userMessage: string, conversationContext: string):
 }
 
 // ---------------------------------------------------------------------------
+// Photo analysis: images are analyzed in-request and DISCARDED — never stored.
+// What survives is the description (and any slot data visible in the shot:
+// tire size off a sidewall, make/model off a grille or door plate).
+export const photoSchema = z.object({
+  description: z
+    .string()
+    .describe(
+      "ONE plain sentence describing what's visible and breakdown-relevant (e.g. 'a blown outer tire on the rear trailer axle, tread separated'). If the photos show nothing breakdown-related, say what they do show."
+    ),
+  tire_size: z.string().nullable().describe('tire size if legible on a sidewall, e.g. 295/75R22.5'),
+  make: z.string().nullable().describe('vehicle make if identifiable'),
+  model: z.string().nullable(),
+  useful: z.boolean().describe('false if the photos are unusable (blurry, dark, irrelevant)'),
+})
+export type PhotoAnalysis = z.infer<typeof photoSchema>
+
+export async function analyzePhotos(dataUrls: string[], context: string): Promise<PhotoAnalysis> {
+  const provider = process.env.LLM_PROVIDER || 'mock'
+  if (provider === 'mock') {
+    return {
+      description: 'a heavy-duty truck tire with visible sidewall damage (mock analysis)',
+      tire_size: '295/75R22.5',
+      make: null,
+      model: null,
+      useful: true,
+    }
+  }
+  const model = provider === 'vertex' ? await vertexModel() : await openaiModel()
+  const { object } = await generateObject({
+    model,
+    schema: photoSchema,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: `You are analyzing photos a stranded driver sent to Rig's diesel-truck/RV breakdown intake. Known so far: ${context}. Describe what you see that matters for dispatching a mechanic.`,
+          },
+          ...dataUrls.map((u) => ({ type: 'image' as const, image: u })),
+        ],
+      },
+    ],
+  })
+  return object
+}
+
+// ---------------------------------------------------------------------------
 // Mock provider: deterministic keyword extraction so the whole engine can be
 // exercised with zero credentials. Deliberately dumb — replace nothing, it
 // exists only so plumbing and UI can be tested end-to-end.

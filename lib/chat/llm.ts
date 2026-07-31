@@ -45,6 +45,12 @@ export const extractionSchema = z.object({
     .string()
     .nullable()
     .describe('2-letter lowercase US state code if confidently inferable from the location (e.g. "amarillo" → tx), else null'),
+  location_query: z
+    .string()
+    .nullable()
+    .describe(
+      'A clean geocoder-friendly search string composed from their location info — expand slang and add known context (e.g. "the pilot past exit 266" + Tucson known → "Pilot Travel Center I-10 exit 266 Tucson AZ"). null if they gave nothing geocodable (mile markers alone are NOT geocodable).'
+    ),
   ack: z
     .string()
     .describe(
@@ -133,6 +139,7 @@ export function mockExtract(msg: string): Extraction {
     location_text,
     location_specific: !!(roadMatch && (refMatch || dirMatch)),
     location_state: has('texas', 'amarillo', 'dallas', 'tucson') ? (has('tucson') ? 'az' : 'tx') : null,
+    location_query: roadMatch || refMatch ? msg : null,
     ack: 'Got it.',
   }
 }

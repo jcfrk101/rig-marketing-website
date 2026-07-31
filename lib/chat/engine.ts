@@ -13,6 +13,7 @@ import {
   nextSlot,
 } from './slots'
 import { Extraction, extract } from './llm'
+import { resolveLocation } from './geo'
 
 export type Widget =
   | { type: 'chips'; options: { id: string; label: string; sub?: string }[] }
@@ -125,14 +126,31 @@ function question(slot: SlotId, s: ChatState): { replies: string[]; widget: Widg
         },
       }
     case 'location': {
+      // Confirm-back: geocoded candidates get tapped, not re-described.
+      if (s.location.candidates?.length) {
+        return {
+          replies: ['**Which of these matches where you are?**'],
+          widget: {
+            type: 'chips',
+            options: [
+              ...s.location.candidates.map((c, i) => ({
+                id: `loc_pick_${i}`,
+                label: `📍 ${c.name}`,
+                sub: c.address,
+              })),
+              { id: 'loc_none', label: 'None of these' },
+            ],
+          },
+        }
+      }
       const ladder = [
-        '**Where are you?** Sharing your location is fastest — exact GPS beats describing a mile marker.',
-        'What highway are you on, and which direction? Any exit number, mile marker, or truck stop in sight?',
+        '**Where are you?** Sharing your location is fastest — exact GPS beats describing where you are.',
+        'What highway and direction — and the **nearest exit number or truck stop**? (Exits map better than mile markers.)',
         'What did the last road sign or exit you passed say? Even a nearby town and road works.',
       ]
       return {
         replies: [ladder[Math.min(s.location.attempts, ladder.length - 1)]],
-        widget: s.location.attempts === 0 ? { type: 'location' } : { type: 'text', placeholder: 'e.g. I-40 westbound, mile marker 286' },
+        widget: s.location.attempts === 0 ? { type: 'location' } : { type: 'text', placeholder: 'e.g. I-40 west, exit 195, or the Pilot in Tucson' },
       }
     }
     case 'tire_size': {
@@ -210,17 +228,7 @@ function mergeExtraction(s: ChatState, e: Extraction): string[] {
       acks.push("Understood — **if you're in danger, call 911 first.** I'm flagging this as urgent for dispatch.")
   }
   if (e.location_state && !s.location.state) s.location.state = e.location_state.toLowerCase()
-  if (e.location_text) {
-    s.location.text = e.location_text
-    if (e.location_specific) {
-      // In the real build this goes through Geocoding/Mile1 and confirm-back.
-      s.location.resolved = e.location_text
-      s.location.tier = 'good'
-      acks.push(
-        `Locked in your location as: **${e.location_text}** — the dispatcher will see exactly that. **${mechanicsNearby(e.location_text)} mechanics** on the Rig network are within range.`
-      )
-    }
-  }
+  if (e.location_text) s.location.text = e.location_text
   return acks
 }
 
@@ -268,6 +276,22 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       }
     } else if (a.id === 'loc_manual') {
       s.location.attempts += 1 // moves the ladder to the typed fallback
+    } else if (a.id.startsWith('loc_pick_')) {
+      const c = s.location.candidates?.[Number(a.id.slice(9))]
+      if (c) {
+        s.location.lat = c.lat
+        s.location.lng = c.lng
+        s.location.resolved = `${c.name}, ${c.address}`
+        if (c.state) s.location.state = c.state
+        s.location.tier = 'gold'
+        s.location.candidates = null
+        replies.push(
+          `Locked in: **${c.name}**. 📍 **${mechanicsNearby(c.name)} mechanics** on the Rig network are within range.`
+        )
+      }
+    } else if (a.id === 'loc_none') {
+      s.location.candidates = null
+      s.location.attempts += 1
     } else if (a.id === 'photos_done') {
       s.photos = a.count ?? s.photos
       photosOffered = true
@@ -302,8 +326,26 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       // stay templated (drift-proof), but the transitions sound human.
       if (e.ack) replies.push(e.ack)
       replies.push(...acks)
+      // Location resolution: geocode the model's cleaned-up query and let the
+      // driver confirm a concrete candidate. Falls back to trusting specific
+      // text when the geocoder has no answer (or no key is configured).
+      let gotCandidates = false
+      const locTier = locationTier(s)
+      if (locTier !== 'gold' && locTier !== 'good' && e.location_query) {
+        const cands = await resolveLocation(e.location_query, s.location.state)
+        if (cands.length) {
+          s.location.candidates = cands
+          gotCandidates = true
+        } else if (e.location_specific && e.location_text) {
+          s.location.resolved = e.location_text
+          s.location.tier = 'good'
+          replies.push(
+            `Locked in your location as: **${e.location_text}** — the dispatcher will see exactly that. **${mechanicsNearby(e.location_text)} mechanics** on the Rig network are within range.`
+          )
+        }
+      }
       // Attempt accounting: if the active slot didn't move, count the try.
-      if (activeBefore === nextSlot(s, photosOffered)) {
+      if (!gotCandidates && activeBefore === nextSlot(s, photosOffered)) {
         if (activeBefore === 'location') s.location.attempts += 1
         if (activeBefore === 'vehicle_detail') s.vehicle.attempts += 1
         if (activeBefore === 'tire_size') s.tireSize.attempts += 1

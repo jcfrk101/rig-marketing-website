@@ -28,6 +28,8 @@ export interface ChatState {
     text: string | null
     resolved: string | null // human-readable confirmed location
     state: string | null // 2-letter code when inferable — drives the directory link
+    // Geocoded candidates awaiting driver confirm-back (name/address/lat/lng/state).
+    candidates: { name: string; address: string; lat: number; lng: number; state: string | null }[] | null
     tier: Tier
     attempts: number
   }
@@ -49,7 +51,7 @@ export function initialState(): ChatState {
     tireSize: { value: null, attempts: 0 },
     problem: { description: null, followupsAsked: 0, drivable: null },
     safety: null,
-    location: { lat: null, lng: null, text: null, resolved: null, state: null, tier: 'missing', attempts: 0 },
+    location: { lat: null, lng: null, text: null, resolved: null, state: null, candidates: null, tier: 'missing', attempts: 0 },
     photos: 0,
     phone: { number: null, verified: false, otpSent: false },
     flags: [],

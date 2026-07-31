@@ -67,6 +67,12 @@ export const extractionSchema = z.object({
     .string()
     .nullable()
     .describe('2-letter lowercase US state code if confidently inferable from the location (e.g. "amarillo" → tx), else null'),
+  customer_name: z
+    .string()
+    .nullable()
+    .describe(
+      'their own name if given — volunteered ("this is Dave") or answering a name question (a bare "dave" when lastQuestion=name). Never a mechanic/company name.'
+    ),
   location_query: z
     .string()
     .nullable()
@@ -220,6 +226,7 @@ export function mockExtract(msg: string): Extraction {
     location_text,
     location_specific: !!(roadMatch && (refMatch || dirMatch)),
     location_state: has('texas', 'amarillo', 'dallas', 'tucson') ? (has('tucson') ? 'az' : 'tx') : null,
+    customer_name: (msg.match(/(?:my name is|this is|i'?m) ([A-Z][a-z]+)\b/) || [])[1] || null,
     location_query: roadMatch || refMatch ? msg : null,
     ack: 'Got it.',
   }

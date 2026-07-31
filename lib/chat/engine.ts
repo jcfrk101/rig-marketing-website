@@ -12,7 +12,7 @@ import {
   locationTier,
   nextSlot,
 } from './slots'
-import { Extraction, extract } from './llm'
+import { Extraction, analyzePhotos, extract } from './llm'
 import { resolveLocation } from './geo'
 
 export type Widget =
@@ -32,6 +32,7 @@ export interface TurnRequest {
   // exactly one of:
   action?: { id: string; value?: string; lat?: number; lng?: number; count?: number } // widget interactions (no LLM)
   message?: string // freeform text (LLM extraction)
+  photos?: string[] // downscaled data-URLs — analyzed by the vision model, then discarded
 }
 
 export interface TurnResponse {
@@ -181,7 +182,9 @@ function question(slot: SlotId, s: ChatState): { replies: string[]; widget: Widg
       }
     case 'phone':
       return {
-        replies: ["Last thing — **your mobile number.** Offers from mechanics arrive by text, so this is where help shows up."],
+        replies: [
+          "Quick one before we go on — **your mobile number.** If we get cut off, dispatch calls you back, and mechanics' offers arrive by text.",
+        ],
         widget: { type: 'phone' },
       }
     case 'summary':
@@ -205,7 +208,8 @@ export function summaryData(s: ChatState): Record<string, string> {
     Vehicle: veh,
     Problem: s.problem.description || '—',
     Location: s.location.resolved || s.location.text || '— (dispatcher will confirm by phone)',
-    Photos: s.photos ? String(s.photos) : 'none',
+    Photos: s.photos ? `${s.photos}${s.photoSummary ? ` — ${s.photoSummary}` : ''}` : 'none',
+    ...(s.photoNotes ? { Notes: s.photoNotes } : {}),
     Phone: (s.phone.number || '—') + (s.phone.verified ? ' ✓ verified' : ''),
     ...(computeFlags(s).length ? { Flags: computeFlags(s).join(', ') } : {}),
   }
@@ -260,19 +264,16 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       replies.push(
         `Location locked in. 📍 **${mechanicsNearby(s.location.resolved)} mechanics** on the Rig network are within range of your spot.`
       )
-    } else if (a.id === 'photo_add') {
-      // Always-available photo — acknowledged in context of the active slot,
-      // and it substitutes for data where the contract allows.
-      s.photos += a.count || 1
-      if (activeBefore === 'tire_size' && !s.tireSize.value) {
-        replies.push("Perfect — a sidewall shot covers the tire size. 📷")
-      } else if (activeBefore === 'vehicle_detail') {
-        s.vehicle.attempts = MAX_ATTEMPTS // vision extraction fills this in the real build
-        replies.push("Got the photo — we'll pull the vehicle details from it. 📷")
-      } else if (activeBefore === 'location') {
-        replies.push('Photo received — surroundings help the dispatcher pin you down. 📷')
-      } else {
-        replies.push('Photo added — mechanics will see it with your request. 📷')
+    } else if (a.id === 'photo_ok') {
+      // Driver confirmed the vision read — nothing to change, move on.
+    } else if (a.id === 'photo_note') {
+      s.awaitingPhotoNote = true
+      return {
+        replies: ['Go ahead — anything the mechanic should know about what the photos show.'],
+        widget: { type: 'text', placeholder: 'e.g. inner tire looks fine, just the outer' },
+        state: s,
+        photosOffered,
+        userEcho,
       }
     } else if (a.id === 'loc_manual') {
       s.location.attempts += 1 // moves the ladder to the typed fallback
@@ -313,6 +314,40 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       )
       return { replies, widget: { type: 'done' }, state: s, photosOffered, userEcho }
     }
+  } else if (req.photos && req.photos.length > 0) {
+    // Vision loop: analyze in-request, keep only the readout — images discarded.
+    const n = req.photos.length
+    userEcho = `📷 ${n} photo${n > 1 ? 's' : ''} sent`
+    const analysis = await analyzePhotos(req.photos, contextLine(s))
+    s.photos += n
+    photosOffered = true
+    if (analysis.tire_size && !s.tireSize.value) s.tireSize.value = analysis.tire_size
+    if (analysis.make && !s.vehicle.make) s.vehicle.make = analysis.make
+    if (analysis.model && !s.vehicle.model) s.vehicle.model = analysis.model
+    s.photoSummary = s.photoSummary ? `${s.photoSummary}; ${analysis.description}` : analysis.description
+    replies.push(
+      analysis.useful
+        ? `From your photo${n > 1 ? 's' : ''}, here's what I can see: **${analysis.description}**${analysis.tire_size ? ` — tire size reads ${analysis.tire_size}` : ''}. Did I get that right?`
+        : `Honestly, I couldn't make much of ${n > 1 ? 'those' : 'that'} — ${analysis.description}. ${n > 1 ? "They'll" : "It'll"} still go to the dispatcher. Anything to add?`
+    )
+    return {
+      replies,
+      widget: {
+        type: 'chips',
+        options: [
+          { id: 'photo_ok', label: '✓ Looks right' },
+          { id: 'photo_note', label: 'Add a note' },
+        ],
+      },
+      state: s,
+      photosOffered,
+      userEcho,
+    }
+  } else if (req.message && s.awaitingPhotoNote) {
+    userEcho = req.message
+    s.photoNotes = s.photoNotes ? `${s.photoNotes}; ${req.message}` : req.message
+    s.awaitingPhotoNote = false
+    replies.push('Noted — that goes to the dispatcher and mechanics along with the photo readout.')
   } else if (req.message) {
     userEcho = req.message
     const e = await extract(req.message, contextLine(s))

@@ -34,6 +34,11 @@ export interface ChatState {
     attempts: number
   }
   photos: number
+  // What the vision model saw in uploaded photos (images themselves are
+  // analyzed and discarded — never stored).
+  photoSummary: string | null
+  photoNotes: string | null
+  awaitingPhotoNote: boolean
   phone: { number: string | null; verified: boolean; otpSent: boolean }
   flags: string[]
   submitted: boolean
@@ -53,6 +58,9 @@ export function initialState(): ChatState {
     safety: null,
     location: { lat: null, lng: null, text: null, resolved: null, state: null, candidates: null, tier: 'missing', attempts: 0 },
     photos: 0,
+    photoSummary: null,
+    photoNotes: null,
+    awaitingPhotoNote: false,
     phone: { number: null, verified: false, otpSent: false },
     flags: [],
     submitted: false,
@@ -120,6 +128,9 @@ export function nextSlot(s: ChatState, photosOffered: boolean): SlotId {
   if (eligibility(s) === 'unknown') return 'fuel'
   if (eligibility(s) === 'ineligible') return 'declined'
   if (s.problem.description === null) return 'problem'
+  // Phone comes right after the problem: if the driver gives up mid-chat,
+  // a verified number means dispatch can still call them back.
+  if (!s.phone.verified) return 'phone'
   if (s.safety === null) return 'safety'
   if (locationTier(s) === 'missing' || (locationTier(s) === 'weak' && s.location.attempts < MAX_ATTEMPTS))
     return 'location'
@@ -132,7 +143,6 @@ export function nextSlot(s: ChatState, photosOffered: boolean): SlotId {
   )
     return 'vehicle_detail'
   if (!photosOffered && s.photos === 0) return 'photos' // skip if they've already sent photos mid-flow
-  if (!s.phone.verified) return 'phone'
   return 'summary'
 }
 

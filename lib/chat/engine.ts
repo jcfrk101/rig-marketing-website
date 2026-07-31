@@ -33,6 +33,9 @@ export interface TurnRequest {
   action?: { id: string; value?: string; lat?: number; lng?: number; count?: number } // widget interactions (no LLM)
   message?: string // freeform text (LLM extraction)
   photos?: string[] // downscaled data-URLs — analyzed by the vision model, then discarded
+  // Approximate device position, read silently when geolocation permission was
+  // already granted (never prompted for). Used only to bias geocoding.
+  bias?: { lat: number; lng: number } | null
 }
 
 export interface TurnResponse {
@@ -367,7 +370,13 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       let gotCandidates = false
       const locTier = locationTier(s)
       if (locTier !== 'gold' && locTier !== 'good' && e.location_query) {
-        const cands = await resolveLocation(e.location_query, s.location.state)
+        // Bias order: coordinates already in the conversation beat the silent
+        // device-position hint; either beats nothing.
+        const biasPoint =
+          s.location.lat !== null && s.location.lng !== null
+            ? { lat: s.location.lat, lng: s.location.lng }
+            : req.bias || null
+        const cands = await resolveLocation(e.location_query, s.location.state, biasPoint)
         if (cands.length) {
           s.location.candidates = cands
           gotCandidates = true

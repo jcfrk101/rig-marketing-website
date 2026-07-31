@@ -37,6 +37,9 @@ export interface ChatState {
     tier: Tier
     attempts: number
   }
+  // Asked exactly once (voice-agent rule); volunteered names captured anytime.
+  name: string | null
+  nameAsked: boolean
   photos: number
   // What the vision model saw in uploaded photos (images themselves are
   // analyzed and discarded — never stored).
@@ -65,6 +68,8 @@ export function initialState(): ChatState {
     problem: { description: null, followupsAsked: 0, drivable: null },
     safety: null,
     location: { lat: null, lng: null, text: null, resolved: null, state: null, candidates: null, tier: 'missing', attempts: 0 },
+    name: null,
+    nameAsked: false,
     photos: 0,
     photoSummary: null,
     photoNotes: null,
@@ -134,6 +139,7 @@ export type SlotId =
   | 'tire_size'
   | 'tow_detail'
   | 'photos'
+  | 'name'
   | 'phone'
   | 'summary'
   | 'declined'
@@ -174,6 +180,7 @@ export function nextSlot(s: ChatState, photosOffered: boolean): SlotId {
   )
     return 'vehicle_detail'
   if (!photosOffered && s.photos === 0) return 'photos' // skip if they've already sent photos mid-flow
+  if (s.name === null && !s.nameAsked) return 'name' // asked once, never re-asked
   return 'summary'
 }
 

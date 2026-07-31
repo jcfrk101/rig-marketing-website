@@ -240,6 +240,11 @@ function question(slot: SlotId, s: ChatState, reask = false): { replies: string[
         widget: { type: 'text', placeholder: 'e.g. 2019 Freightliner Cascadia' },
       }
     }
+    case 'name':
+      return {
+        replies: ['Almost done — **can I have your name?** First name is fine.'],
+        widget: { type: 'text', placeholder: 'e.g. Dave' },
+      }
     case 'photos':
       return {
         replies: ['Photos help mechanics bid accurately — the damage, plus one wide shot. **Optional, but worth 20 seconds.**'],
@@ -269,6 +274,7 @@ export function summaryData(s: ChatState): Record<string, string> {
   const veh = [s.vehicle.year, s.vehicle.make, s.vehicle.model].filter(Boolean).join(' ') ||
     { semi: 'Semi / tractor-trailer', box_truck: 'Box truck', rv: 'RV / motorhome', pickup: 'Pickup', van: 'Van', car: 'Car', other: 'Vehicle' }[s.vehicleClass || 'other']
   return {
+    ...(s.name ? { Name: s.name } : {}),
     Service: svc + (s.vehicleClass === 'rv' ? ' (RV)' : ''),
     Vehicle: veh,
     Problem: s.problem.description || '—',
@@ -304,6 +310,7 @@ function mergeExtraction(s: ChatState, e: Extraction): string[] {
   if (e.tow_dropoff && !s.tow.dropoff) s.tow.dropoff = e.tow_dropoff
   if (e.trailer_info && !s.tow.trailerInfo) s.tow.trailerInfo = e.trailer_info
   if (e.wants_winch) s.wantsWinch = true
+  if (e.customer_name && !s.name) s.name = e.customer_name
   // Contentless phrases ("broke down") don't satisfy the problem slot —
   // the model is told to null them, this is the code backstop.
   if (e.problem && e.problem.trim().split(/\s+/).length >= 3 && !s.problem.description)
@@ -326,6 +333,10 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
   if (s.tireSpare === undefined) s.tireSpare = null
   if (!s.tow) s.tow = { dropoff: null, trailerInfo: null, attempts: 0 }
   if (s.wantsWinch === undefined) s.wantsWinch = false
+  if (s.name === undefined) {
+    s.name = null
+    s.nameAsked = false
+  }
   let photosOffered = req.photosOffered ?? false
   const replies: string[] = []
   let userEcho: string | undefined
@@ -506,6 +517,7 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
   }
 
   const slot = nextSlot(s, photosOffered)
+  if (slot === 'name') s.nameAsked = true // ask-once rule
   // Freeform answer that didn't move the active slot → clarify, don't repeat.
   const q = question(slot, s, !!req.message && slot === activeBefore)
   // Avoid repeating the identical question when a meta/off-topic answer was given:
@@ -514,5 +526,6 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
 }
 
 function contextLine(s: ChatState): string {
-  return `Known so far: service=${s.service}, vehicleClass=${s.vehicleClass}, fuel=${s.fuel}, problem=${s.problem.description ? 'yes' : 'no'}, location=${s.location.resolved || s.location.text || 'no'}`
+  const awaitingName = s.nameAsked && !s.name ? ', lastQuestion=name' : ''
+  return `Known so far: service=${s.service}, vehicleClass=${s.vehicleClass}, fuel=${s.fuel}, problem=${s.problem.description ? 'yes' : 'no'}, location=${s.location.resolved || s.location.text || 'no'}${awaitingName}`
 }

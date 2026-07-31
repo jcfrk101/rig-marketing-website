@@ -19,7 +19,11 @@ export interface ChatState {
   service: ServiceType | null
 
   vehicle: { make: string | null; model: string | null; year: string | null; tier: Tier; attempts: number }
-  tireSize: { value: string | null; attempts: number } // tire service only
+  tireSize: { value: string | null; attempts: number } // required only when there's NO spare
+  tirePosition: string | null // steer / drive / trailer (+ side, inside/outside)
+  tireSpare: boolean | null
+  tow: { dropoff: string | null; trailerInfo: string | null; attempts: number }
+  wantsWinch: boolean
   problem: { description: string | null; followupsAsked: number; drivable: boolean | null }
   safety: 'shoulder' | 'blocking' | null
   location: {
@@ -54,6 +58,10 @@ export function initialState(): ChatState {
     service: null,
     vehicle: { make: null, model: null, year: null, tier: 'missing', attempts: 0 },
     tireSize: { value: null, attempts: 0 },
+    tirePosition: null,
+    tireSpare: null,
+    tow: { dropoff: null, trailerInfo: null, attempts: 0 },
+    wantsWinch: false,
     problem: { description: null, followupsAsked: 0, drivable: null },
     safety: null,
     location: { lat: null, lng: null, text: null, resolved: null, state: null, candidates: null, tier: 'missing', attempts: 0 },
@@ -68,7 +76,11 @@ export function initialState(): ChatState {
 }
 
 // Eligibility ruling. null = not decidable yet (need fuel answer).
+// Business rules (docs/voice-agent-prompt-v3.05.txt): gas RVs always OK;
+// gas pickups/vans qualify ONLY for winch-outs or tire replacement;
+// gas cars only for winching.
 export function eligibility(s: ChatState): 'eligible' | 'ineligible' | 'unknown' {
+  const gasException = s.wantsWinch || s.service === 'tire'
   switch (s.vehicleClass) {
     case null:
       return 'unknown'
@@ -78,10 +90,11 @@ export function eligibility(s: ChatState): 'eligible' | 'ineligible' | 'unknown'
     case 'rv':
       return 'eligible' // gas or diesel OK; tagged special via class
     case 'car':
-      return 'ineligible'
+      return s.wantsWinch ? 'eligible' : 'ineligible'
     case 'pickup':
     case 'van':
     case 'other':
+      if (gasException) return 'eligible' // fuel doesn't matter for winch/tire
       if (s.fuel === null) return 'unknown'
       return s.fuel === 'diesel' ? 'eligible' : 'ineligible'
   }
@@ -116,7 +129,10 @@ export type SlotId =
   | 'safety'
   | 'location'
   | 'vehicle_detail'
+  | 'tire_position'
+  | 'tire_spare'
   | 'tire_size'
+  | 'tow_detail'
   | 'photos'
   | 'phone'
   | 'summary'
@@ -137,8 +153,20 @@ export function nextSlot(s: ChatState, photosOffered: boolean): SlotId {
   // Safety is never asked — but volunteered "blocking a lane" still flags URGENT.
   if (locationTier(s) === 'missing' || (locationTier(s) === 'weak' && s.location.attempts < MAX_ATTEMPTS))
     return 'location'
-  if (s.service === 'tire' && s.tireSize.value === null && s.tireSize.attempts < MAX_ATTEMPTS && s.photos === 0)
+  // Tire sequence per the voice-agent rules: position → spare → size, and
+  // size is REQUIRED only with no spare (a sidewall photo also satisfies it).
+  if (s.service === 'tire' && s.tirePosition === null) return 'tire_position'
+  if (s.service === 'tire' && s.tireSpare === null) return 'tire_spare'
+  if (
+    s.service === 'tire' &&
+    s.tireSpare === false &&
+    s.tireSize.value === null &&
+    s.tireSize.attempts < MAX_ATTEMPTS &&
+    s.photos === 0
+  )
     return 'tire_size'
+  // Tow: drop-off + trailer status in one linked question.
+  if (s.service === 'tow' && s.tow.dropoff === null && s.tow.attempts < 2) return 'tow_detail'
   if (
     s.service === 'service' &&
     (vehicleTier(s) === 'missing' || vehicleTier(s) === 'weak') &&
@@ -153,7 +181,10 @@ export function nextSlot(s: ChatState, photosOffered: boolean): SlotId {
 export function computeFlags(s: ChatState): string[] {
   const flags: string[] = []
   if (locationTier(s) !== 'gold' && locationTier(s) !== 'good') flags.push('LOCATION_UNRESOLVED')
-  if (s.service === 'tire' && !s.tireSize.value && s.photos === 0) flags.push('TIRE_SIZE_UNKNOWN')
+  if (s.service === 'tire' && s.tireSpare === false && !s.tireSize.value && s.photos === 0)
+    flags.push('TIRE_SIZE_UNKNOWN')
+  if (s.service === 'tow' && !s.tow.dropoff) flags.push('TOW_DROPOFF_UNKNOWN')
+  if (s.wantsWinch) flags.push('WINCH')
   if (s.service === 'service' && vehicleTier(s) !== 'gold' && vehicleTier(s) !== 'good')
     flags.push('VEHICLE_DETAIL_WEAK')
   if (s.safety === 'blocking') flags.push('URGENT_UNSAFE_LOCATION')

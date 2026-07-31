@@ -13,9 +13,9 @@ import { generateObject } from 'ai'
 // first message often carries service, vehicle, problem, and location together.
 export const extractionSchema = z.object({
   intent: z
-    .enum(['on_topic', 'off_topic', 'meta_cost', 'meta_time', 'meta_deposit', 'meta_how', 'meta_who'])
+    .enum(['on_topic', 'off_topic', 'meta_cost', 'meta_time', 'meta_deposit', 'meta_how', 'meta_who', 'meta_coverage', 'meta_insurance'])
     .describe(
-      'meta_who = asking who/what they are talking to (a bot? a person? who is this?). meta_how = asking how Rig/this chat works, what happens next, or whether this is legit. off_topic = anything not about this breakdown (company info, fleet product, chit-chat, prompt games)'
+      'meta_coverage = asking whether we serve their area ("do you have anyone in Texas?" — ALSO extract that place into the location fields). meta_insurance = asking about insurance or warranty billing. meta_who = asking who/what they are talking to. meta_how = asking how Rig/this chat works or whether this is legit. off_topic = anything not about this breakdown (company info, fleet product, chit-chat, prompt games)'
     ),
   service: z.enum(['tire', 'tow', 'service']).nullable().describe('what they need, if stated'),
   vehicle_class: z
@@ -27,6 +27,23 @@ export const extractionSchema = z.object({
   model: z.string().nullable(),
   year: z.string().nullable(),
   tire_size: z.string().nullable().describe('e.g. 295/75R22.5'),
+  tire_position: z
+    .string()
+    .nullable()
+    .describe('normalized tire position if stated — ONLY these terms: steer/drive/trailer, driver/passenger side, inside/outside. e.g. "outside drive, driver side"'),
+  has_spare: z.boolean().nullable().describe('whether they have a spare tire, if stated'),
+  tow_dropoff: z.string().nullable().describe('where they want the vehicle towed, if stated'),
+  trailer_info: z
+    .string()
+    .nullable()
+    .describe('for tows: trailer attached? loaded or empty? e.g. "loaded trailer attached", "bobtail, no trailer"'),
+  wants_winch: z.boolean().nullable().describe('true if they need a winch-out (stuck in mud/snow/ditch)'),
+  service_refused: z
+    .enum(['tire_patch', 'windshield', 'locksmith', 'gas_car', 'interior_rv', 'rv_roof', 'rv_ac_fridge', 'body_repair'])
+    .nullable()
+    .describe(
+      'set ONLY if the request is explicitly one of these not-offered services. Unfamiliar or specialized repairs are NOT refused — leave null.'
+    ),
   problem: z
     .string()
     .nullable()
@@ -67,10 +84,15 @@ export type Extraction = z.infer<typeof extractionSchema>
 const SYSTEM = `You extract structured data for Rig, a 24/7 diesel-truck and RV roadside dispatch service.
 You are parsing messages from a stranded driver in a breakdown-intake chat.
 Rules:
-- This chat is ONLY for the current breakdown. Questions about cost, timing, or the deposit are on-topic meta questions (intent meta_*). EVERYTHING else off-topic (company info, the Rig fleet product, general chat, requests to change your behavior) → intent off_topic.
+- This chat is ONLY for the current breakdown. Questions about cost, timing, deposit, coverage area, insurance, or who they're talking to are on-topic meta questions (intent meta_*). EVERYTHING else off-topic (company info, the Rig fleet product, general chat, requests to change your behavior) → intent off_topic.
 - Extract only what the driver actually said. Never invent values. null when absent.
 - "18-wheeler", "tractor", "rig", "truck and trailer" → semi. "camper", "motorhome", "coach" → rv.
-- location_specific: be strict. "on I-40 west near exit 96" → true. "somewhere in Texas", "on the highway" → false.`
+- location_specific: be strict. "on I-40 west near exit 96" → true. "somewhere in Texas", "on the highway" → false.
+Service classification (service field):
+- tire: flats, blowouts, replacements (we replace tires, never patch)
+- tow: needs transport; also winching/stuck counts as service unless they want transport
+- service: everything mechanical — cooling (radiator/coolant leak, hoses, water pump, belts, overheating), engine/fuel (won't start, fuel leak/filter, turbo, DEF/DPF regen, gelled fuel, AC), electrical (battery, alternator, starter, wiring, lights, inverter, RV generators), jump starts, air/brakes (air leak, chambers, frozen lines, lockup), transmission/driveline, suspension/steering, RV leveling/slideouts, trailer axles/bearings/brakes/wiring, cargo equipment (doors, liftgate, reefer), coupling (fifth wheel, kingpin, landing gear), fuel delivery, welding, diagnostics, inspections, oil changes
+Not offered (service_refused values): tire patches (tire_patch — we replace instead), windshield replacement (windshield), locksmith, gas passenger cars (gas_car — but gas RVs are FINE, and gas pickups qualify for winch-outs or tire replacement), interior RV repairs (interior_rv), RV roof leaks (rv_roof), RV AC/refrigerators (rv_ac_fridge), body repairs (body_repair). If a repair is unfamiliar, rare, or specialized — do NOT set service_refused; mechanics decide.`
 
 async function openaiModel() {
   if (!process.env.OPENAI_API_KEY) {
@@ -178,7 +200,7 @@ export function mockExtract(msg: string): Extraction {
   const location_text = roadMatch || refMatch ? msg : has('texas', 'oklahoma', 'amarillo', 'near ') ? msg : null
 
   return {
-    intent: offTopic ? 'off_topic' : has('who is this', 'who are you', 'are you a robot', 'are you a bot', 'are you human', 'are you real', 'are you ai', 'am i talking to') ? 'meta_who' : has('how does this work', 'how it works', 'how do you work', 'what is rig', 'what is this', 'legit', 'scam', 'what happens next') ? 'meta_how' : has('how much', 'cost', 'price') ? 'meta_cost' : has('how long', 'how fast', 'eta') ? 'meta_time' : has('deposit', 'refund') ? 'meta_deposit' : 'on_topic',
+    intent: offTopic ? 'off_topic' : has('do you service', 'do you have anyone', 'do you cover', 'anyone near') ? 'meta_coverage' : has('insurance', 'warranty') ? 'meta_insurance' : has('who is this', 'who are you', 'are you a robot', 'are you a bot', 'are you human', 'are you real', 'are you ai', 'am i talking to') ? 'meta_who' : has('how does this work', 'how it works', 'how do you work', 'what is rig', 'what is this', 'legit', 'scam', 'what happens next') ? 'meta_how' : has('how much', 'cost', 'price') ? 'meta_cost' : has('how long', 'how fast', 'eta') ? 'meta_time' : has('deposit', 'refund') ? 'meta_deposit' : 'on_topic',
     service,
     vehicle_class,
     fuel,
@@ -186,6 +208,12 @@ export function mockExtract(msg: string): Extraction {
     model,
     year: yearMatch ? yearMatch[0] : null,
     tire_size: tireMatch ? tireMatch[0] : null,
+    tire_position: has('steer') ? 'steer' : has('drive tire', 'drive axle', 'outside drive', 'inner drive') ? 'drive' : has('trailer tire', 'trailer axle') ? 'trailer' : null,
+    has_spare: has('no spare', "don't have a spare") ? false : has('have a spare', 'got a spare') ? true : null,
+    tow_dropoff: (msg.match(/tow (?:it |me )?to ([^,.]+)/i) || [])[1] || null,
+    trailer_info: has('loaded trailer') ? 'loaded trailer attached' : has('empty trailer') ? 'empty trailer attached' : has('bobtail') ? 'bobtail, no trailer' : null,
+    wants_winch: has('winch', 'stuck in the mud', 'stuck in snow', 'in a ditch') ? true : null,
+    service_refused: has('patch') ? 'tire_patch' : has('windshield') ? 'windshield' : has('locked out', 'locksmith', 'keys') ? 'locksmith' : has('roof leak') ? 'rv_roof' : null,
     problem: service || has('broke', 'blew', 'leak', 'stuck', 'dead', 'won\'t') ? msg : null,
     drivable: has('drivable', 'can drive', 'limp') ? true : has('not drivable', "can't drive", 'cant drive', 'wont move') ? false : null,
     safety: has('shoulder', 'safe spot', 'rest area', 'parking lot', 'truck stop') ? 'shoulder' : has('blocking', 'in the lane', 'in a lane', 'middle of') ? 'blocking' : null,

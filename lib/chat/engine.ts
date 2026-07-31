@@ -29,7 +29,7 @@ export interface TurnRequest {
   state: ChatState | null
   photosOffered?: boolean
   // exactly one of:
-  action?: { id: string; value?: string; lat?: number; lng?: number } // widget interactions (no LLM)
+  action?: { id: string; value?: string; lat?: number; lng?: number; count?: number } // widget interactions (no LLM)
   message?: string // freeform text (LLM extraction)
 }
 
@@ -255,7 +255,7 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
     } else if (a.id === 'photo_add') {
       // Always-available photo — acknowledged in context of the active slot,
       // and it substitutes for data where the contract allows.
-      s.photos += 1
+      s.photos += a.count || 1
       if (activeBefore === 'tire_size' && !s.tireSize.value) {
         replies.push("Perfect — a sidewall shot covers the tire size. 📷")
       } else if (activeBefore === 'vehicle_detail') {
@@ -269,7 +269,7 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
     } else if (a.id === 'loc_manual') {
       s.location.attempts += 1 // moves the ladder to the typed fallback
     } else if (a.id === 'photos_done') {
-      s.photos = Number(a.value || 0)
+      s.photos = a.count ?? s.photos
       photosOffered = true
     } else if (a.id === 'phone_number') {
       s.phone.number = a.value || null
@@ -298,7 +298,9 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       replies.push(META[e.intent])
     } else {
       const acks = mergeExtraction(s, e)
-      if (e.ack && acks.length === 0 && activeBefore !== nextSlot(s, photosOffered)) replies.push(e.ack)
+      // Always lead with the model's situational acknowledgment — the questions
+      // stay templated (drift-proof), but the transitions sound human.
+      if (e.ack) replies.push(e.ack)
       replies.push(...acks)
       // Attempt accounting: if the active slot didn't move, count the try.
       if (activeBefore === nextSlot(s, photosOffered)) {

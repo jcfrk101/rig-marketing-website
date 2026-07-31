@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import BreakdownChat from '@/components/chat/BreakdownChat'
+import HelpView from '@/components/chat/HelpView'
 
 export const metadata: Metadata = {
   title: 'Get help now — 24/7 diesel truck & RV roadside dispatch',
@@ -9,9 +9,5 @@ export const metadata: Metadata = {
 }
 
 export default function HelpPage() {
-  return (
-    <div className="h-dvh">
-      <BreakdownChat />
-    </div>
-  )
+  return <HelpView />
 }

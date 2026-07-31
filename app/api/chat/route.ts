@@ -3,6 +3,19 @@ import { runTurn, TurnRequest } from '@/lib/chat/engine'
 
 export const dynamic = 'force-dynamic'
 
+// Health/config probe: which LLM provider is this deployment actually running?
+// No secrets exposed — just the switch position and model names.
+export async function GET() {
+  const provider = process.env.LLM_PROVIDER || 'mock'
+  const model =
+    provider === 'openai'
+      ? process.env.OPENAI_MODEL || 'gpt-4o-mini'
+      : provider === 'vertex'
+        ? process.env.VERTEX_MODEL || 'gemini-2.5-flash'
+        : 'deterministic-mock'
+  return NextResponse.json({ ok: true, provider, model })
+}
+
 export async function POST(req: NextRequest) {
   let body: TurnRequest
   try {

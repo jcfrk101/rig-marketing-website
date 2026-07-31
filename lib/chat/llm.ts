@@ -45,7 +45,11 @@ export const extractionSchema = z.object({
     .string()
     .nullable()
     .describe('2-letter lowercase US state code if confidently inferable from the location (e.g. "amarillo" → tx), else null'),
-  ack: z.string().describe('ONE short empathetic sentence acknowledging what they said; no questions'),
+  ack: z
+    .string()
+    .describe(
+      "ONE short empathetic sentence reacting to the specifics of what they just said — mention the vehicle, problem, or place when given (e.g. 'A dead Kenworth outside Flagstaff — let's get on it.'). Plain trucker-friendly tone, no corporate fluff, never a question, vary the wording."
+    ),
 })
 export type Extraction = z.infer<typeof extractionSchema>
 

@@ -38,7 +38,12 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
   const [photosOffered, setPhotosOffered] = useState(false)
   const [busy, setBusy] = useState(false)
   const [input, setInput] = useState('')
-  const [photoCount, setPhotoCount] = useState(0)
+  // Real files from the camera/gallery. Client-side only for now: previews and
+  // counts are real, but bytes stay in the browser until the upload backend
+  // (GCS via rig-web-services) exists.
+  const [photos, setPhotos] = useState<{ name: string; url: string }[]>([])
+  const pendingPickAction = useRef<'widget' | 'pill'>('widget')
+  const fileRef = useRef<HTMLInputElement>(null)
   const [otp, setOtp] = useState(['', '', '', ''])
   const [phoneError, setPhoneError] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -50,7 +55,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
   const scrollDown = () =>
     requestAnimationFrame(() => streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight, behavior: 'smooth' }))
 
-  async function turn(payload: { action?: { id: string; value?: string; lat?: number; lng?: number }; message?: string }, isRetry = false) {
+  async function turn(payload: { action?: { id: string; value?: string; lat?: number; lng?: number; count?: number }; message?: string }, isRetry = false) {
     setBusy(true)
     setWidget(null)
     lastPayload.current = payload
@@ -70,7 +75,6 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
       setWidget(data.widget)
       setInput('')
       setOtp(['', '', '', ''])
-      setPhotoCount(0)
       setFailed(false)
     } catch {
       // Never leave a stranded driver with a dead widget — offer a retry,
@@ -115,6 +119,21 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
   }
 
   const send = () => input.trim() && !busy && turn({ message: input.trim() })
+
+  function onFilesPicked(files: FileList | null) {
+    if (!files || files.length === 0) return
+    const added = [...files].map((f) => ({ name: f.name, url: URL.createObjectURL(f) }))
+    setPhotos((p) => [...p, ...added])
+    if (pendingPickAction.current === 'pill') {
+      turn({ action: { id: 'photo_add', value: `📷 ${added.length > 1 ? added.length + ' photos' : 'Photo'} sent`, count: added.length } })
+    }
+  }
+
+  function openPicker(source: 'widget' | 'pill') {
+    pendingPickAction.current = source
+    if (fileRef.current) fileRef.current.value = ''
+    fileRef.current?.click()
+  }
 
   const submitPhone = () => {
     const digits = input.replace(/\D/g, '')
@@ -230,13 +249,12 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
         {!busy && widget?.type === 'photos' && (
           <div className="flex flex-col gap-2.5">
             <div className="flex flex-wrap gap-2">
-              {Array.from({ length: photoCount }).map((_, i) => (
-                <div key={i} className="grid h-[72px] w-[72px] place-items-center rounded-xl border border-white/15 bg-gradient-to-br from-[#4a5a66] to-[#2e3a44] text-2xl">
-                  📷
-                </div>
+              {photos.map((p, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={i} src={p.url} alt={p.name} className="h-[72px] w-[72px] rounded-xl border border-white/15 object-cover" />
               ))}
               <button
-                onClick={() => setPhotoCount((c) => c + 1)}
+                onClick={() => openPicker('widget')}
                 className="h-[72px] w-[72px] rounded-xl border-[1.5px] border-dashed border-rig-green text-2xl text-rig-green"
                 aria-label="Add photo"
               >
@@ -244,10 +262,10 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
               </button>
             </div>
             <button
-              onClick={() => turn({ action: { id: 'photos_done', value: photoCount ? `📷 ${photoCount} photo${photoCount > 1 ? 's' : ''} added` : 'Skip photos' } })}
+              onClick={() => turn({ action: { id: 'photos_done', value: photos.length ? `📷 ${photos.length} photo${photos.length > 1 ? 's' : ''} added` : 'Skip photos', count: photos.length } })}
               className="w-full rounded-full bg-rig-green px-4 py-3 text-[15px] font-extrabold text-rig-navy-deep hover:bg-rig-green-dark"
             >
-              {photoCount ? 'Done — continue' : 'Skip photos'}
+              {photos.length ? 'Done — continue' : 'Skip photos'}
             </button>
           </div>
         )}
@@ -362,12 +380,22 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
             answers (tire size, vehicle plate, surroundings) per the contract. */}
         {!busy && widget && !['photos', 'otp', 'summary', 'done', 'declined'].includes(widget.type) && (
           <button
-            onClick={() => turn({ action: { id: 'photo_add', value: '📷 Photo sent' } })}
+            onClick={() => openPicker('pill')}
             className="self-center rounded-full border border-white/20 px-4 py-1.5 text-[12.5px] text-white/60 transition hover:border-rig-green hover:text-rig-green"
           >
             📷 Send a photo instead
           </button>
         )}
+
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          multiple
+          hidden
+          onChange={(e) => onFilesPicked(e.target.files)}
+        />
         </div>
       </div>
 

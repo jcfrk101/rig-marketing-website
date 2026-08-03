@@ -44,21 +44,10 @@ export async function reverseGeocode(lat: number, lng: number): Promise<{ addres
   return fallback
 }
 
-export async function resolveLocation(
-  query: string,
-  biasState?: string | null,
-  biasPoint?: { lat: number; lng: number } | null
-): Promise<GeoCandidate[]> {
-  if (!KEY()) return []
-  const q = biasState && !query.toLowerCase().includes(biasState) ? `${query} ${biasState.toUpperCase()}` : query
+async function placesSearch(q: string, biasPoint?: { lat: number; lng: number } | null): Promise<GeoCandidate[]> {
   // ~80km radius bias: strong enough to rank the right Pilot first, weak
   // enough that an explicit "in Tucson" in the query still wins.
   const placesBias = biasPoint ? `&location=${biasPoint.lat},${biasPoint.lng}&radius=80000` : ''
-  const geocodeBias = biasPoint
-    ? `&bounds=${biasPoint.lat - 0.7},${biasPoint.lng - 0.7}|${biasPoint.lat + 0.7},${biasPoint.lng + 0.7}`
-    : ''
-
-  // Places Text Search — best for named places (truck stops, exits, businesses).
   try {
     const res = await fetch(
       `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(q)}${placesBias}&region=us&key=${KEY()}`,
@@ -75,10 +64,15 @@ export async function resolveLocation(
       }))
     }
   } catch {
-    // fall through to geocoding
+    // unavailable
   }
+  return []
+}
 
-  // Geocoding API — addresses, towns, intersections.
+async function geocodeSearch(q: string, biasPoint?: { lat: number; lng: number } | null): Promise<GeoCandidate[]> {
+  const geocodeBias = biasPoint
+    ? `&bounds=${biasPoint.lat - 0.7},${biasPoint.lng - 0.7}|${biasPoint.lat + 0.7},${biasPoint.lng + 0.7}`
+    : ''
   try {
     const res = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}${geocodeBias}&region=us&key=${KEY()}`,
@@ -86,7 +80,7 @@ export async function resolveLocation(
     )
     const data = await res.json()
     if (data.status === 'OK' && data.results?.length) {
-      return data.results.slice(0, 3).map((r: any) => ({
+      return data.results.slice(0, 2).map((r: any) => ({
         name: r.formatted_address.split(',')[0],
         address: r.formatted_address,
         lat: r.geometry.location.lat,
@@ -95,7 +89,50 @@ export async function resolveLocation(
       }))
     }
   } catch {
-    // no results
+    // unavailable
   }
   return []
+}
+
+const kmBetween = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+  const R = 6371
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(s))
+}
+
+/**
+ * Multi-source resolution feeding the confirm-back chips.
+ * Bake-off findings (scripts/geo-eval.mjs): the LLM-composed query into Places
+ * is by far the strongest single strategy (8/10 vs 4/10 raw), so its results
+ * lead. The raw text and Geocoding run in parallel and contribute candidates
+ * only when meaningfully DIFFERENT (>2km from anything already listed) —
+ * ambiguity is resolved by the driver tapping, never by proximity ranking
+ * (which measurably picked wrong-but-nearby results).
+ */
+export async function resolveLocation(
+  query: string,
+  biasState?: string | null,
+  biasPoint?: { lat: number; lng: number } | null,
+  rawText?: string | null
+): Promise<GeoCandidate[]> {
+  if (!KEY()) return []
+  const q = biasState && !query.toLowerCase().includes(biasState) ? `${query} ${biasState.toUpperCase()}` : query
+
+  const [composed, raw, geo] = await Promise.all([
+    placesSearch(q, biasPoint),
+    rawText && rawText.trim() !== q ? placesSearch(rawText, biasPoint) : Promise.resolve([]),
+    geocodeSearch(q, biasPoint),
+  ])
+
+  const merged: GeoCandidate[] = []
+  for (const candidate of [...composed, ...raw, ...geo]) {
+    if (merged.length >= 3) break
+    if (merged.some((existing) => kmBetween(existing, candidate) < 2)) continue
+    merged.push(candidate)
+  }
+  return merged
 }

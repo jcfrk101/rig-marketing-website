@@ -1,7 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { runTurn, TurnRequest } from '@/lib/chat/engine'
+import { runTurn, TurnRequest, TurnResponse } from '@/lib/chat/engine'
 
 export const dynamic = 'force-dynamic'
+
+// Transcript logging, two sinks:
+// 1. stdout as structured JSON — lands in Cloud Logging on Cloud Run,
+//    queryable/exportable for evaluation immediately, zero dependencies.
+// 2. rig-web-services POST /chat/transcript (when RIG_API_URL/RIG_API_KEY are
+//    set) — durable per-conversation log that also surfaces in the dispatcher
+//    AI Review view once the lead finalizes. Fire-and-forget; never blocks or
+//    fails the turn.
+function logTranscript(req: TurnRequest, res: TurnResponse) {
+  const now = Math.floor(Date.now() / 1000)
+  const entries: { role: string; text: string; at_epoch: number }[] = []
+  const driverText =
+    req.message ?? req.action?.value ?? (req.photos?.length ? `[sent ${req.photos.length} photo(s)]` : null)
+  if (driverText) entries.push({ role: 'driver', text: driverText, at_epoch: now })
+  for (const r of res.replies) entries.push({ role: 'bot', text: r, at_epoch: now })
+  if (entries.length === 0) return
+
+  const conversationId = res.state.conversationId
+  console.log(
+    JSON.stringify({
+      evt: 'chat_transcript',
+      conversationId,
+      slot: res.widget?.type,
+      submitted: res.state.submitted,
+      declined: res.state.declined,
+      entries,
+    })
+  )
+
+  const base = process.env.RIG_API_URL
+  const key = process.env.RIG_API_KEY
+  if (base && key) {
+    fetch(`${base}/chat/transcript`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'Rig-Api-Key': key },
+      body: JSON.stringify({ conversation_id: conversationId, entries }),
+    }).catch((err) => console.error('transcript forward failed', err))
+  }
+}
 
 // Health/config probe: which LLM provider is this deployment actually running?
 // No secrets exposed — just the switch position and model names.
@@ -25,6 +64,7 @@ export async function POST(req: NextRequest) {
   }
   try {
     const res = await runTurn(body)
+    logTranscript(body, res)
     return NextResponse.json(res)
   } catch (err) {
     console.error('chat turn failed', err)

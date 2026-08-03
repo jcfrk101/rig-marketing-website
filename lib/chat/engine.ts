@@ -402,6 +402,14 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       ]
     } else if (a.id === 'photo_ok') {
       // Driver confirmed the vision read — nothing to change, move on.
+    } else if (a.id === 'photo_more') {
+      return {
+        replies: ['Go ahead — add as many as help tell the story.'],
+        widget: { type: 'photos' },
+        state: s,
+        photosOffered,
+        userEcho,
+      }
     } else if (a.id === 'photo_note') {
       s.awaitingPhotoNote = true
       return {
@@ -528,7 +536,8 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       widget: {
         type: 'chips',
         options: [
-          { id: 'photo_ok', label: '✓ Looks right' },
+          { id: 'photo_more', label: '📷 Add more photos' },
+          { id: 'photo_ok', label: "✓ Looks right — I'm done" },
           { id: 'photo_note', label: 'Add a note' },
         ],
       },

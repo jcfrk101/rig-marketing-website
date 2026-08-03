@@ -94,6 +94,7 @@ Rules:
 - Extract only what the driver actually said. Never invent values. null when absent.
 - "18-wheeler", "tractor", "rig", "truck and trailer" → semi. "camper", "motorhome", "coach" → rv.
 - location_specific: be strict. "on I-40 west near exit 96" → true. "somewhere in Texas", "on the highway" → false.
+- The context's currentQuestion field tells you which slot the driver is answering — bind bare answers to it (a lone "car" when currentQuestion=vehicle_class → vehicle_class car; a lone "no" when currentQuestion=tire_spare → has_spare false).
 Service classification (service field):
 - tire: flats, blowouts, replacements (we replace tires, never patch)
 - tow: needs transport; also winching/stuck counts as service unless they want transport
@@ -194,7 +195,7 @@ export function mockExtract(msg: string): Extraction {
     : has('box truck', 'box-truck') ? 'box_truck'
     : has('rv', 'motorhome', 'camper', 'coach', 'winnebago') ? 'rv'
     : has('pickup', 'f-250', 'f250', 'f-350', 'ram 2500', 'ram 3500', 'duramax') ? 'pickup'
-    : has('my car', 'sedan', 'camry', 'civic') ? 'car' : null
+    : /\bcar\b|sedan|camry|civic/.test(m) ? 'car' : null
   const fuel = has('diesel') ? 'diesel' : has('gas', 'gasoline') ? 'gas' : null
   const make = has('freightliner') ? 'Freightliner' : has('peterbilt') ? 'Peterbilt' : has('kenworth') ? 'Kenworth' : has('volvo') ? 'Volvo' : has('winnebago') ? 'Winnebago' : has('ford', 'f-250', 'f250') ? 'Ford' : null
   const model = has('cascadia') ? 'Cascadia' : has('579') ? '579' : null

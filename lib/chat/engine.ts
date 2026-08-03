@@ -261,6 +261,33 @@ function question(slot: SlotId, s: ChatState, reask = false): { replies: string[
     case 'summary':
       return { replies: ["Here's what I'm sending to dispatch:"], widget: { type: 'summary', data: summaryData(s) } }
     case 'declined':
+      // Declines carry their legitimate escape hatches (voice-agent rules):
+      // cars qualify for winch-outs; gas pickups/vans for tires and winch-outs.
+      if (s.vehicleClass === 'car') {
+        return {
+          replies: [
+            "We're diesel truck and RV specialists, so passenger cars aren't something we service — **with one exception: if you're stuck, a winch-out we can do.**",
+          ],
+          widget: {
+            type: 'chips',
+            options: [{ id: 'winch_yes', label: "I'm stuck — I need a winch-out" }],
+          },
+        }
+      }
+      if ((s.vehicleClass === 'pickup' || s.vehicleClass === 'van' || s.vehicleClass === 'other') && s.fuel === 'gas') {
+        return {
+          replies: [
+            "Full mechanical work is diesel-only — but for gas vehicles we can still do **tire replacements** and **winch-outs**.",
+          ],
+          widget: {
+            type: 'chips',
+            options: [
+              { id: 'svc_tire', label: "It's a tire problem" },
+              { id: 'winch_yes', label: "I'm stuck — I need a winch-out" },
+            ],
+          },
+        }
+      }
       return {
         replies: ["We're diesel truck and RV specialists only, so we can't help with this one — sorry we can't get you moving."],
         widget: { type: 'declined' },
@@ -353,7 +380,11 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       replies.push(SERVICE_TEASER[s.service!])
     } else if (a.id.startsWith('vc_')) s.vehicleClass = a.id.slice(3) as ChatState['vehicleClass']
     else if (a.id.startsWith('fuel_')) s.fuel = a.id.slice(5) as ChatState['fuel']
-    else if (a.id.startsWith('tirepos_')) s.tirePosition = a.id.slice(8)
+    else if (a.id === 'winch_yes') {
+      s.wantsWinch = true
+      if (!s.service) s.service = 'service'
+      replies.push("A winch-out we can do — let's get you pulled out.")
+    } else if (a.id.startsWith('tirepos_')) s.tirePosition = a.id.slice(8)
     else if (a.id === 'spare_yes') s.tireSpare = true
     else if (a.id === 'spare_no') s.tireSpare = false
     else if (a.id === 'safe_shoulder') s.safety = 'shoulder'
@@ -512,7 +543,7 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
     replies.push('Noted — that goes to the dispatcher and mechanics along with the photo readout.')
   } else if (req.message) {
     userEcho = req.message
-    const e = await extract(req.message, contextLine(s))
+    const e = await extract(req.message, contextLine(s, activeBefore))
     if (e.intent === 'off_topic') {
       replies.push(REDIRECT)
     } else if (e.intent.startsWith('meta_')) {
@@ -585,7 +616,8 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
   return { replies, widget: q.widget, state: s, photosOffered, userEcho }
 }
 
-function contextLine(s: ChatState): string {
+function contextLine(s: ChatState, currentQuestion?: string): string {
   const awaitingName = s.nameAsked && !s.name ? ', lastQuestion=name' : ''
-  return `Known so far: service=${s.service}, vehicleClass=${s.vehicleClass}, fuel=${s.fuel}, problem=${s.problem.description ? 'yes' : 'no'}, location=${s.location.resolved || s.location.text || 'no'}${awaitingName}`
+  const asking = currentQuestion ? `, currentQuestion=${currentQuestion}` : ''
+  return `Known so far: service=${s.service}, vehicleClass=${s.vehicleClass}, fuel=${s.fuel}, problem=${s.problem.description ? 'yes' : 'no'}, location=${s.location.resolved || s.location.text || 'no'}${awaitingName}${asking}`
 }

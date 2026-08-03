@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runTurn, TurnRequest, TurnResponse } from '@/lib/chat/engine'
+import { updateLead } from '@/lib/chat/backend'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,6 +66,11 @@ export async function POST(req: NextRequest) {
   try {
     const res = await runTurn(body)
     logTranscript(body, res)
+    // Partial-lead snapshot: every post-verification turn upserts the latest
+    // structured payload so the stale promoter always has current data.
+    if (res.state.phone.verified && !res.state.submitted) {
+      void updateLead(res.state)
+    }
     return NextResponse.json(res)
   } catch (err) {
     console.error('chat turn failed', err)

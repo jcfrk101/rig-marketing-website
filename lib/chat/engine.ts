@@ -486,7 +486,7 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
           s.location.lat !== null && s.location.lng !== null
             ? { lat: s.location.lat, lng: s.location.lng }
             : req.bias || null
-        const cands = await resolveLocation(e.location_query, s.location.state, biasPoint)
+        const cands = await resolveLocation(e.location_query, s.location.state, biasPoint, e.location_text)
         if (cands.length) {
           s.location.candidates = cands
           gotCandidates = true

@@ -314,10 +314,18 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
               </button>
             </div>
             <button
-              onClick={() => turn({ action: { id: 'photos_done', value: 'Skip photos', count: photos.length } })}
+              onClick={() =>
+                turn({
+                  action: {
+                    id: 'photos_done',
+                    value: photos.length ? "I'm done with photos" : 'Skip photos',
+                    count: photos.length,
+                  },
+                })
+              }
               className="w-full rounded-full bg-rig-green px-4 py-3 text-[15px] font-extrabold text-rig-navy-deep hover:bg-rig-green-dark"
             >
-              Skip photos
+              {photos.length ? "✓ I'm done — continue" : 'Skip photos'}
             </button>
           </div>
         )}

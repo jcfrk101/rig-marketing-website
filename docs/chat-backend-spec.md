@@ -74,5 +74,9 @@ calls — no transcript extraction step needed for chat.
 
 - Real mechanic-count for the "N mechanics within range" teaser (currently a
   deterministic placeholder; directory stats or network density query).
-- Mile1 integration in `geo.ts` for corridor-native resolution (mile markers).
+- Mile1 integration in `geo.ts` for corridor-native resolution — the geo
+  bake-off (scripts/geo-eval.mjs) shows mile markers are the ONE case no
+  Google strategy solves (28km best-miss across 7 strategies).
+- Places API (New) migration: benchmarked identical to legacy (8/10 vs 8/10)
+  — zero accuracy gain, so purely a future legacy-sunset hygiene task.
 - Late-night expectation copy (after 10pm CST, per the voice rules).

@@ -82,7 +82,7 @@ export const extractionSchema = z.object({
   ack: z
     .string()
     .describe(
-      "ONE short empathetic sentence reacting to the specifics of what they just said — mention the vehicle, problem, or place when given (e.g. 'A dead Kenworth outside Flagstaff — let's get on it.'). Plain trucker-friendly tone, no corporate fluff, never a question, vary the wording."
+      "ONE short empathetic sentence reacting to the specifics of what they just said — mention the vehicle, problem, or place when given (e.g. 'A dead Kenworth outside Flagstaff, let's get on it.'). Plain trucker-friendly tone, no corporate fluff, never a question, vary the wording. Use ONLY plain ASCII punctuation (commas, periods, apostrophes) — no em dashes or special characters."
     ),
 })
 export type Extraction = z.infer<typeof extractionSchema>
@@ -140,7 +140,7 @@ export const photoSchema = z.object({
   description: z
     .string()
     .describe(
-      "ONE plain sentence describing what's visible and breakdown-relevant (e.g. 'a blown outer tire on the rear trailer axle, tread separated'). If the photos show nothing breakdown-related, say what they do show."
+      "ONE plain sentence describing what's visible and breakdown-relevant (e.g. 'a blown outer tire on the rear trailer axle, tread separated'). If the photos show nothing breakdown-related, say what they do show. Plain ASCII punctuation only — no em dashes or special characters."
     ),
   tire_size: z.string().nullable().describe('tire size if legible on a sidewall, e.g. 295/75R22.5'),
   make: z.string().nullable().describe('vehicle make if identifiable'),

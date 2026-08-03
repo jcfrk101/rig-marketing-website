@@ -528,8 +528,9 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
         replies.push(REFUSALS[e.service_refused])
       } else if (e.ack) {
         // Situational acknowledgment — questions stay templated (drift-proof),
-        // but the transitions sound human.
-        replies.push(e.ack)
+        // but the transitions sound human. Whitespace collapse covers the
+        // model occasionally dropping a punctuation character mid-sentence.
+        replies.push(e.ack.replace(/\s{2,}/g, ' ').trim())
       }
       replies.push(...acks)
       // Location resolution: geocode the model's cleaned-up query and let the

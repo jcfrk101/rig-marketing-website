@@ -56,7 +56,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
   const scrollDown = () =>
     requestAnimationFrame(() => streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight, behavior: 'smooth' }))
 
-  async function turn(payload: { action?: { id: string; value?: string; lat?: number; lng?: number; count?: number }; message?: string; photos?: string[] }, isRetry = false) {
+  async function turn(payload: { action?: { id: string; value?: string; lat?: number; lng?: number; count?: number; code?: string }; message?: string; photos?: string[] }, isRetry = false) {
     setBusy(true)
     setWidget(null)
     lastPayload.current = payload
@@ -148,7 +148,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
     next[i] = v.replace(/\D/g, '').slice(-1)
     setOtp(next)
     if (next[i] && i < 3) otpRefs.current[i + 1]?.focus()
-    if (next.every((d) => d)) turn({ action: { id: 'otp_code', value: '• • • •' } })
+    if (next.every((d) => d)) turn({ action: { id: 'otp_code', value: '• • • •', code: next.join('') } })
   }
 
   const send = () => input.trim() && !busy && turn({ message: input.trim() })

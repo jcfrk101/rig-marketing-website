@@ -14,6 +14,7 @@ import {
 } from './slots'
 import { Extraction, analyzePhotos, extract } from './llm'
 import { resolveLocation, reverseGeocode } from './geo'
+import { addPhoto, checkOtp, sendOtp, submitLead } from './backend'
 
 export type Widget =
   | { type: 'chips'; options: { id: string; label: string; sub?: string }[] }
@@ -30,7 +31,7 @@ export interface TurnRequest {
   state: ChatState | null
   photosOffered?: boolean
   // exactly one of:
-  action?: { id: string; value?: string; lat?: number; lng?: number; count?: number } // widget interactions (no LLM)
+  action?: { id: string; value?: string; lat?: number; lng?: number; count?: number; code?: string } // widget interactions (no LLM)
   message?: string // freeform text (LLM extraction)
   photos?: string[] // downscaled data-URLs — analyzed by the vision model, then discarded
   // Approximate device position, read silently when geolocation permission was
@@ -400,16 +401,67 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
     } else if (a.id === 'photos_done') {
       s.photos = a.count ?? s.photos
       photosOffered = true
-    } else if (a.id === 'phone_number') {
-      s.phone.number = a.value || null
-      s.phone.otpSent = true
-      replies.push('Texted you a 4-digit code — enter it here:')
-      return { replies, widget: { type: 'otp' }, state: s, photosOffered, userEcho }
+    } else if (a.id === 'phone_number' || a.id === 'otp_resend') {
+      const phone = a.id === 'otp_resend' ? s.phone.number : a.value || null
+      s.phone.number = phone
+      const sent = phone ? await sendOtp(s.conversationId, phone) : { sent: false, reason: 'invalid_request' }
+      if (sent.sent) {
+        s.phone.otpSent = true
+        replies.push('Texted you a 4-digit code — enter it here:')
+        return { replies, widget: { type: 'otp' }, state: s, photosOffered, userEcho }
+      }
+      if (sent.reason === 'cooldown') {
+        replies.push('Just sent one — give it a minute to arrive, then enter it here:')
+        return { replies, widget: { type: 'otp' }, state: s, photosOffered, userEcho }
+      }
+      if (sent.reason === 'too_many_sends') {
+        replies.push(
+          "We've hit the resend limit for this number. **Call us instead — 1 (855) 744-2223** answers 24/7 and can take it from here."
+        )
+        return { replies, widget: { type: 'phone' }, state: s, photosOffered, userEcho }
+      }
+      replies.push("That didn't go through — double-check the number and try again.")
+      return { replies, widget: { type: 'phone' }, state: s, photosOffered, userEcho }
     } else if (a.id === 'otp_code') {
-      // Mock verification: real build calls rig-web-services / Twilio Verify.
-      s.phone.verified = true
-      replies.push("✓ Verified. You're all set.")
+      const result = await checkOtp(s.conversationId, s.phone.number || '', a.code || '', s.name)
+      if (result.verified) {
+        s.phone.verified = true
+        replies.push("✓ Verified. You're all set.")
+      } else if (result.reason === 'wrong_code') {
+        replies.push("That code doesn't match — give it another look and try again:")
+        return { replies, widget: { type: 'otp' }, state: s, photosOffered, userEcho }
+      } else if (result.reason === 'expired' || result.reason === 'no_code_sent') {
+        replies.push('That code expired.')
+        return {
+          replies,
+          widget: { type: 'chips', options: [{ id: 'otp_resend', label: 'Send a new code' }] },
+          state: s,
+          photosOffered,
+          userEcho,
+        }
+      } else if (result.reason === 'too_many_attempts') {
+        replies.push(
+          "Too many tries on that code. **Call us — 1 (855) 744-2223** and a dispatcher takes it from here."
+        )
+        return { replies, widget: { type: 'declined' }, state: s, photosOffered, userEcho }
+      } else {
+        replies.push("Something hiccuped verifying that — try the code once more:")
+        return { replies, widget: { type: 'otp' }, state: s, photosOffered, userEcho }
+      }
     } else if (a.id === 'submit') {
+      const result = await submitLead(s)
+      if (!result.submitted) {
+        replies.push(
+          "That didn't go through on our side — tap **Send to dispatch** again, or call **1 (855) 744-2223** and we'll take it by phone."
+        )
+        return {
+          replies,
+          widget: { type: 'summary', data: summaryData(s) },
+          state: s,
+          photosOffered,
+          userEcho,
+        }
+      }
       s.submitted = true
       s.flags = computeFlags(s)
       replies.push('🚀 **Sent.** A dispatcher is reviewing it now, and nearby mechanics are being notified.')
@@ -425,6 +477,12 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
     const analysis = await analyzePhotos(req.photos, contextLine(s))
     s.photos += n
     photosOffered = true
+    // Persist to the backend once the conversation is verified (the backend
+    // rejects pre-verification uploads); pre-OTP photos still get the vision
+    // readout, which rides the payload either way.
+    if (s.phone.verified) {
+      await Promise.allSettled(req.photos.map((p) => addPhoto(s.conversationId, p)))
+    }
     if (analysis.tire_size && !s.tireSize.value) s.tireSize.value = analysis.tire_size
     if (analysis.make && !s.vehicle.make) s.vehicle.make = analysis.make
     if (analysis.model && !s.vehicle.model) s.vehicle.model = analysis.model

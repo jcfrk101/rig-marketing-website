@@ -410,11 +410,8 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       s.photos = items.length
       s.photoSummary = items.map((p) => p.desc).join('; ') || null
       if (removed?.url) void removePhoto(s.conversationId, removed.url)
-      if (a.ctx === 'summary') {
-        // Deleted from the review screen — fall through so the summary
-        // re-renders with the updated photo line.
-        replies.push('Removed.')
-      } else {
+      if (a.ctx === 'picker') {
+        // Deleted while the picker step is open — stay in it.
         replies.push(
           items.length
             ? `Removed — ${items.length} photo${items.length > 1 ? 's' : ''} still attached.`
@@ -422,6 +419,9 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
         )
         return { replies, widget: { type: 'photos' }, state: s, photosOffered, userEcho }
       }
+      // Deleted from the persistent strip mid-flow — acknowledge and fall
+      // through so whatever question was active re-renders unchanged.
+      replies.push('Removed.')
     } else if (a.id === 'photo_more') {
       return {
         replies: ['Go ahead — add as many as help tell the story.'],

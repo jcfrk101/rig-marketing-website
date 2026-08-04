@@ -23,7 +23,12 @@ export const extractionSchema = z.object({
     .nullable()
     .describe('semi = tractor-trailer/18-wheeler; rv = motorhome/camper'),
   fuel: z.enum(['diesel', 'gas']).nullable(),
-  make: z.string().nullable().describe('vehicle make if stated, e.g. Freightliner, Peterbilt, Winnebago'),
+  make: z
+    .string()
+    .nullable()
+    .describe(
+      'vehicle make ONLY if the driver explicitly wrote it (or an unambiguous model name implies it) — normalize spelling and capitalization. NEVER fill this from the vehicle class or conversation context; a semi with no stated brand is null'
+    ),
   model: z.string().nullable(),
   year: z.string().nullable(),
   tire_size: z.string().nullable().describe('e.g. 295/75R22.5'),
@@ -155,7 +160,12 @@ export const photoSchema = z.object({
       "SHORT dispatcher-note phrase, 12 words max, telegraphic style: 'blown outer tire, rear trailer axle, tread separated'. Never start with 'The photo shows' or similar filler. If nothing breakdown-related is visible, name what is, just as briefly. Plain ASCII punctuation only — no em dashes or special characters."
     ),
   tire_size: z.string().nullable().describe('tire size if legible on a sidewall, e.g. 295/75R22.5'),
-  make: z.string().nullable().describe('vehicle make if identifiable'),
+  make: z
+    .string()
+    .nullable()
+    .describe(
+      'vehicle make ONLY if clearly identifiable in the photo (badge, grille, door lettering) — never guessed from the vehicle type'
+    ),
   model: z.string().nullable(),
   vin: z
     .string()

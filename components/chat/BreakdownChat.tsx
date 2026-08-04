@@ -56,7 +56,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
   const scrollDown = () =>
     requestAnimationFrame(() => streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight, behavior: 'smooth' }))
 
-  async function turn(payload: { action?: { id: string; value?: string; lat?: number; lng?: number; count?: number; code?: string }; message?: string; photos?: string[] }, isRetry = false) {
+  async function turn(payload: { action?: { id: string; value?: string; lat?: number; lng?: number; count?: number; code?: string; index?: number; ctx?: string }; message?: string; photos?: string[] }, isRetry = false) {
     setBusy(true)
     setWidget(null)
     lastPayload.current = payload
@@ -170,6 +170,13 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
       img.onerror = reject
       img.src = url
     })
+  }
+
+  // Removes a photo everywhere it lives: the local thumbnail strip, the
+  // engine's photoItems/summary, and (via the engine) the backend copy.
+  function deletePhoto(i: number, ctx?: string) {
+    setPhotos((p) => p.filter((_, j) => j !== i))
+    turn({ action: { id: 'photo_delete', value: 'Removed a photo', index: i, ctx } })
   }
 
   async function onFilesPicked(files: FileList | null) {
@@ -302,8 +309,17 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
           <div className="flex flex-col gap-2.5">
             <div className="flex flex-wrap gap-2">
               {photos.map((p, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={i} src={p.url} alt={p.name} className="h-[72px] w-[72px] rounded-xl border border-white/15 object-cover" />
+                <div key={i} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.url} alt={p.name} className="h-[72px] w-[72px] rounded-xl border border-white/15 object-cover" />
+                  <button
+                    onClick={() => deletePhoto(i)}
+                    aria-label="Remove photo"
+                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#ff7a6b] text-[11px] font-extrabold leading-none text-rig-navy-deep shadow"
+                  >
+                    ✕
+                  </button>
+                </div>
               ))}
               <button
                 onClick={openPicker}
@@ -387,6 +403,23 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
                 </tbody>
               </table>
             </div>
+            {photos.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {photos.map((p, i) => (
+                  <div key={i} className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={p.url} alt={p.name} className="h-[56px] w-[56px] rounded-lg border border-white/15 object-cover" />
+                    <button
+                      onClick={() => deletePhoto(i, 'summary')}
+                      aria-label="Remove photo"
+                      className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#ff7a6b] text-[11px] font-extrabold leading-none text-rig-navy-deep shadow"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <button
               onClick={() => turn({ action: { id: 'submit', value: 'Send to dispatch' } })}
               className="w-full rounded-full bg-rig-green px-4 py-3 text-[15px] font-extrabold text-rig-navy-deep hover:bg-rig-green-dark"

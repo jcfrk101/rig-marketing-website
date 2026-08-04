@@ -14,7 +14,8 @@ import {
 } from './slots'
 import { Extraction, analyzePhotos, extract } from './llm'
 import { resolveLocation, reverseGeocode } from './geo'
-import { addPhoto, checkOtp, sendOtp, submitLead } from './backend'
+import { addPhoto, checkOtp, removePhoto, sendOtp, submitLead } from './backend'
+import { decodeVin } from './vin'
 
 export type Widget =
   | { type: 'chips'; options: { id: string; label: string; sub?: string }[] }
@@ -31,7 +32,7 @@ export interface TurnRequest {
   state: ChatState | null
   photosOffered?: boolean
   // exactly one of:
-  action?: { id: string; value?: string; lat?: number; lng?: number; count?: number; code?: string } // widget interactions (no LLM)
+  action?: { id: string; value?: string; lat?: number; lng?: number; count?: number; code?: string; index?: number; ctx?: string } // widget interactions (no LLM)
   message?: string // freeform text (LLM extraction)
   photos?: string[] // downscaled data-URLs — analyzed by the vision model, then discarded
   // Approximate device position, read silently when geolocation permission was
@@ -233,8 +234,8 @@ function question(slot: SlotId, s: ChatState, reask = false): { replies: string[
     case 'vehicle_detail': {
       const example = s.vehicleClass === 'rv' ? '2020 Winnebago Adventurer' : s.vehicleClass === 'pickup' || s.vehicleClass === 'van' ? '2021 Ford F-350' : '2019 Freightliner Cascadia'
       const ladder = [
-        `**Make and model?** e.g. ${example} — helps the mechanic bring the right parts.`,
-        "Not sure? What's on the grille — or snap a photo of the registration or door plate.",
+        `**Make and model?** e.g. ${example} — helps the mechanic bring the right parts. (Or send a picture of your VIN plate and I'll look it up.)`,
+        "Not sure? What's on the grille — or snap a photo of the VIN plate, registration, or door sticker and I'll look it up.",
       ]
       return {
         replies: [ladder[Math.min(s.vehicle.attempts, ladder.length - 1)]],
@@ -402,6 +403,25 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       ]
     } else if (a.id === 'photo_ok') {
       // Driver confirmed the vision read — nothing to change, move on.
+    } else if (a.id === 'photo_delete') {
+      const items = s.photoItems ?? []
+      const removed = a.index != null ? items.splice(a.index, 1)[0] : undefined
+      s.photoItems = items
+      s.photos = items.length
+      s.photoSummary = items.map((p) => p.desc).join('; ') || null
+      if (removed?.url) void removePhoto(s.conversationId, removed.url)
+      if (a.ctx === 'summary') {
+        // Deleted from the review screen — fall through so the summary
+        // re-renders with the updated photo line.
+        replies.push('Removed.')
+      } else {
+        replies.push(
+          items.length
+            ? `Removed — ${items.length} photo${items.length > 1 ? 's' : ''} still attached.`
+            : 'Removed — no photos attached now.'
+        )
+        return { replies, widget: { type: 'photos' }, state: s, photosOffered, userEcho }
+      }
     } else if (a.id === 'photo_more') {
       return {
         replies: ['Go ahead — add as many as help tell the story.'],
@@ -510,26 +530,51 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       return { replies, widget: { type: 'done' }, state: s, photosOffered, userEcho }
     }
   } else if (req.photos && req.photos.length > 0) {
-    // Vision loop: analyze in-request, keep only the readout — images discarded.
+    // Vision loop: analyze in-request, keep only the readout — images discarded
+    // here (the backend keeps its own copy once verified). Analyzed per-photo
+    // so each one is individually deletable with its own readout.
     const n = req.photos.length
     userEcho = `📷 ${n} photo${n > 1 ? 's' : ''} sent`
-    const analysis = await analyzePhotos(req.photos, contextLine(s))
-    s.photos += n
+    const [analyses, urls] = await Promise.all([
+      Promise.all(req.photos.map((p) => analyzePhotos([p], contextLine(s)))),
+      // Persist to the backend once the conversation is verified (the backend
+      // rejects pre-verification uploads); pre-OTP photos still get the vision
+      // readout, which rides the payload either way.
+      s.phone.verified
+        ? Promise.all(req.photos.map((p) => addPhoto(s.conversationId, p)))
+        : Promise.resolve(req.photos.map(() => null)),
+    ])
+    s.photoItems = s.photoItems ?? [] // sessions started before this field existed
+    analyses.forEach((a, i) => s.photoItems.push({ desc: a.description, url: urls[i] }))
+    s.photos = s.photoItems.length
     photosOffered = true
-    // Persist to the backend once the conversation is verified (the backend
-    // rejects pre-verification uploads); pre-OTP photos still get the vision
-    // readout, which rides the payload either way.
-    if (s.phone.verified) {
-      await Promise.allSettled(req.photos.map((p) => addPhoto(s.conversationId, p)))
+    const tireSize = analyses.find((a) => a.tire_size)?.tire_size ?? null
+    if (tireSize && !s.tireSize.value) s.tireSize.value = tireSize
+    const make = analyses.find((a) => a.make)?.make ?? null
+    const model = analyses.find((a) => a.model)?.model ?? null
+    if (make && !s.vehicle.make) s.vehicle.make = make
+    if (model && !s.vehicle.model) s.vehicle.model = model
+    // A legible VIN beats everything — decode via NHTSA and overwrite.
+    const vin = analyses.find((a) => a.vin)?.vin ?? null
+    const decoded = vin ? await decodeVin(vin) : null
+    if (decoded) {
+      if (decoded.make) s.vehicle.make = decoded.make
+      if (decoded.model) s.vehicle.model = decoded.model
+      if (decoded.year) s.vehicle.year = decoded.year
     }
-    if (analysis.tire_size && !s.tireSize.value) s.tireSize.value = analysis.tire_size
-    if (analysis.make && !s.vehicle.make) s.vehicle.make = analysis.make
-    if (analysis.model && !s.vehicle.model) s.vehicle.model = analysis.model
-    s.photoSummary = s.photoSummary ? `${s.photoSummary}; ${analysis.description}` : analysis.description
+    s.photoSummary = s.photoItems.map((p) => p.desc).join('; ') || null
+    const anyUseful = analyses.some((a) => a.useful)
+    const readout = analyses
+      .filter((a) => a.useful)
+      .map((a) => a.description)
+      .join('; ')
+    const vinLine = decoded
+      ? ` I read the VIN too — that's a ${[decoded.year, decoded.make, decoded.model].filter(Boolean).join(' ')}.`
+      : ''
     replies.push(
-      analysis.useful
-        ? `From your photo${n > 1 ? 's' : ''}, here's what I can see: **${analysis.description}**${analysis.tire_size ? ` — tire size reads ${analysis.tire_size}` : ''}. Did I get that right?`
-        : `Honestly, I couldn't make much of ${n > 1 ? 'those' : 'that'} — ${analysis.description}. ${n > 1 ? "They'll" : "It'll"} still go to the dispatcher. Anything to add?`
+      anyUseful
+        ? `From your photo${n > 1 ? 's' : ''}, here's what I can see: **${readout}**${tireSize ? ` — tire size reads ${tireSize}` : ''}.${vinLine} Did I get that right?`
+        : `Honestly, I couldn't make much of ${n > 1 ? 'those' : 'that'} — ${analyses[0].description}. ${n > 1 ? "They'll" : "It'll"} still go to the dispatcher. Anything to add?`
     )
     return {
       replies,

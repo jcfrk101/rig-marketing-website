@@ -307,28 +307,20 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
 
         {!busy && widget?.type === 'photos' && (
           <div className="flex flex-col gap-2.5">
-            <div className="flex flex-wrap gap-2">
-              {photos.map((p, i) => (
-                <div key={i} className="relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.url} alt={p.name} className="h-[72px] w-[72px] rounded-xl border border-white/15 object-cover" />
-                  <button
-                    onClick={() => deletePhoto(i)}
-                    aria-label="Remove photo"
-                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#ff7a6b] text-[11px] font-extrabold leading-none text-rig-navy-deep shadow"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={openPicker}
-                className="h-[72px] w-[72px] rounded-xl border-[1.5px] border-dashed border-rig-green text-2xl text-rig-green"
-                aria-label="Add photo"
-              >
-                ＋
-              </button>
-            </div>
+            {/* Thumbnails live in the persistent strip at the bottom of the
+                pane once any photo exists — only the empty state needs its
+                own add tile here. */}
+            {photos.length === 0 && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={openPicker}
+                  className="h-[72px] w-[72px] rounded-xl border-[1.5px] border-dashed border-rig-green text-2xl text-rig-green"
+                  aria-label="Add photo"
+                >
+                  ＋
+                </button>
+              </div>
+            )}
             <button
               onClick={() =>
                 turn({
@@ -403,23 +395,6 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
                 </tbody>
               </table>
             </div>
-            {photos.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {photos.map((p, i) => (
-                  <div key={i} className="relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.url} alt={p.name} className="h-[56px] w-[56px] rounded-lg border border-white/15 object-cover" />
-                    <button
-                      onClick={() => deletePhoto(i, 'summary')}
-                      aria-label="Remove photo"
-                      className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#ff7a6b] text-[11px] font-extrabold leading-none text-rig-navy-deep shadow"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
             <button
               onClick={() => turn({ action: { id: 'submit', value: 'Send to dispatch' } })}
               className="w-full rounded-full bg-rig-green px-4 py-3 text-[15px] font-extrabold text-rig-navy-deep hover:bg-rig-green-dark"
@@ -471,13 +446,40 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
 
         {/* Always-available photo escape hatch — photos substitute for typed
             answers (tire size, vehicle plate, surroundings) per the contract. */}
-        {!busy && widget && !['photos', 'otp', 'summary', 'done', 'declined'].includes(widget.type) && (
+        {!busy && photos.length === 0 && widget && !['photos', 'otp', 'summary', 'done', 'declined'].includes(widget.type) && (
           <button
             onClick={openPicker}
             className="self-center rounded-full border border-white/20 px-4 py-1.5 text-[12.5px] text-white/60 transition hover:border-rig-green hover:text-rig-green"
           >
             📷 Send a photo instead
           </button>
+        )}
+
+        {/* Once photos exist, they live here permanently — visible, deletable
+            (red ✕), and extendable (＋) at every step until submit. */}
+        {!busy && photos.length > 0 && widget && !['otp', 'done', 'declined'].includes(widget.type) && (
+          <div className="flex flex-wrap items-center justify-center gap-2 border-t border-white/10 pt-2.5">
+            {photos.map((p, i) => (
+              <div key={i} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.url} alt={p.name} className="h-[56px] w-[56px] rounded-lg border border-white/15 object-cover" />
+                <button
+                  onClick={() => deletePhoto(i, widget.type === 'photos' ? 'picker' : undefined)}
+                  aria-label="Remove photo"
+                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#ff7a6b] text-[11px] font-extrabold leading-none text-rig-navy-deep shadow"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            <button
+              onClick={openPicker}
+              className="h-[56px] w-[56px] rounded-lg border-[1.5px] border-dashed border-white/30 text-xl text-white/50 transition hover:border-rig-green hover:text-rig-green"
+              aria-label="Add photo"
+            >
+              ＋
+            </button>
+          </div>
         )}
 
         {/* No `capture` attribute: phones then offer the native chooser

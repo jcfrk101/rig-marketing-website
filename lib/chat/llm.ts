@@ -152,7 +152,7 @@ export const photoSchema = z.object({
   description: z
     .string()
     .describe(
-      "ONE plain sentence describing what's visible and breakdown-relevant (e.g. 'a blown outer tire on the rear trailer axle, tread separated'). If the photos show nothing breakdown-related, say what they do show. Plain ASCII punctuation only — no em dashes or special characters."
+      "SHORT dispatcher-note phrase, 12 words max, telegraphic style: 'blown outer tire, rear trailer axle, tread separated'. Never start with 'The photo shows' or similar filler. If nothing breakdown-related is visible, name what is, just as briefly. Plain ASCII punctuation only — no em dashes or special characters."
     ),
   tire_size: z.string().nullable().describe('tire size if legible on a sidewall, e.g. 295/75R22.5'),
   make: z.string().nullable().describe('vehicle make if identifiable'),

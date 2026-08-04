@@ -23,9 +23,13 @@ export interface ChatState {
 
   vehicle: { make: string | null; model: string | null; year: string | null; tier: Tier; attempts: number }
   tireSize: { value: string | null; attempts: number } // required only when there's NO spare
-  tirePosition: string | null // steer / drive / trailer (+ side, inside/outside)
+  tirePosition: string | null // which axle: steer / drive / trailer
+  tireSide: string | null // driver / passenger (voice-agent rule: always collect)
+  tireDual: string | null // inner / outer / both — only where duals live (drive/trailer)
   tireSpare: boolean | null
   tow: { dropoff: string | null; trailerInfo: string | null; attempts: number }
+  // Trailer-only work skips make/model/year (voice-agent rule).
+  trailerWork: boolean | null
   wantsWinch: boolean
   problem: { description: string | null; followupsAsked: number; drivable: boolean | null }
   safety: 'shoulder' | 'blocking' | null
@@ -70,8 +74,11 @@ export function initialState(): ChatState {
     vehicle: { make: null, model: null, year: null, tier: 'missing', attempts: 0 },
     tireSize: { value: null, attempts: 0 },
     tirePosition: null,
+    tireSide: null,
+    tireDual: null,
     tireSpare: null,
     tow: { dropoff: null, trailerInfo: null, attempts: 0 },
+    trailerWork: null,
     wantsWinch: false,
     problem: { description: null, followupsAsked: 0, drivable: null },
     safety: null,
@@ -144,6 +151,8 @@ export type SlotId =
   | 'location'
   | 'vehicle_detail'
   | 'tire_position'
+  | 'tire_side'
+  | 'tire_dual'
   | 'tire_spare'
   | 'tire_size'
   | 'tow_detail'
@@ -171,6 +180,15 @@ export function nextSlot(s: ChatState, photosOffered: boolean): SlotId {
   // Tire sequence per the voice-agent rules: position → spare → size, and
   // size is REQUIRED only with no spare (a sidewall photo also satisfies it).
   if (s.service === 'tire' && s.tirePosition === null) return 'tire_position'
+  // Side always; inner/outer only where duals live (drive/trailer axles).
+  if (s.service === 'tire' && s.tirePosition !== null && s.tireSide === null) return 'tire_side'
+  if (
+    s.service === 'tire' &&
+    s.tirePosition !== null &&
+    /drive|trailer/i.test(s.tirePosition) &&
+    s.tireDual === null
+  )
+    return 'tire_dual'
   if (s.service === 'tire' && s.tireSpare === null) return 'tire_spare'
   if (
     s.service === 'tire' &&
@@ -184,6 +202,7 @@ export function nextSlot(s: ChatState, photosOffered: boolean): SlotId {
   if (s.service === 'tow' && s.tow.dropoff === null && s.tow.attempts < 2) return 'tow_detail'
   if (
     s.service === 'service' &&
+    s.trailerWork !== true && // trailer-only work skips make/model/year (voice-agent rule)
     (vehicleTier(s) === 'missing' || vehicleTier(s) === 'weak') &&
     s.vehicle.attempts < MAX_ATTEMPTS
   )
@@ -201,8 +220,9 @@ export function computeFlags(s: ChatState): string[] {
     flags.push('TIRE_SIZE_UNKNOWN')
   if (s.service === 'tow' && !s.tow.dropoff) flags.push('TOW_DROPOFF_UNKNOWN')
   if (s.wantsWinch) flags.push('WINCH')
-  if (s.service === 'service' && vehicleTier(s) !== 'gold' && vehicleTier(s) !== 'good')
+  if (s.service === 'service' && s.trailerWork !== true && vehicleTier(s) !== 'gold' && vehicleTier(s) !== 'good')
     flags.push('VEHICLE_DETAIL_WEAK')
+  if (s.trailerWork === true) flags.push('TRAILER_WORK')
   if (s.safety === 'blocking') flags.push('URGENT_UNSAFE_LOCATION')
   if (s.vehicleClass === 'rv') flags.push('RV')
   return flags

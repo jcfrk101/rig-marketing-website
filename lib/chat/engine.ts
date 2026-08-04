@@ -354,13 +354,48 @@ export function summaryData(s: ChatState): Record<string, string> {
   }
 }
 
-function mergeExtraction(s: ChatState, e: Extraction): string[] {
+// Was this term (or a close misspelling of it) actually typed by the driver?
+// Guards make/model against extractor hallucination — gpt-4o-mini has been
+// seen copying schema examples ("Freightliner") for brandless messages.
+// Dice-coefficient bigram match per word so "frieghtliner" still binds.
+function typedByDriver(msg: string, term: string | null): boolean {
+  if (!term) return false
+  const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const bigrams = (x: string) => {
+    const g = new Set<string>()
+    for (let i = 0; i < x.length - 1; i++) g.add(x.slice(i, i + 2))
+    return g
+  }
+  const t = norm(term)
+  if (t.length < 3) return false
+  const tg = bigrams(t)
+  return msg
+    .toLowerCase()
+    .split(/[^a-z0-9-]+/)
+    .some((w) => {
+      const nw = norm(w)
+      if (nw.length < 3) return false
+      if (nw.includes(t) || t.includes(nw)) return true
+      let overlap = 0
+      tg.forEach((b) => {
+        if (bigrams(nw).has(b)) overlap++
+      })
+      return (2 * overlap) / (tg.size + bigrams(nw).size) >= 0.6
+    })
+}
+
+function mergeExtraction(s: ChatState, e: Extraction, msg?: string): string[] {
   const acks: string[] = []
   if (e.service && !s.service) s.service = e.service
   if (e.vehicle_class && !s.vehicleClass) s.vehicleClass = e.vehicle_class
   if (e.fuel && !s.fuel) s.fuel = e.fuel
-  if (e.make && !s.vehicle.make) s.vehicle.make = e.make
-  if (e.model && !s.vehicle.model) s.vehicle.model = e.model
+  // Make/model must trace back to the driver's own words (make may ride in on
+  // an unambiguous model, e.g. "cascadia" → Freightliner). No message context
+  // (widget actions) keeps the old trust-the-extractor behavior.
+  const modelTyped = msg === undefined || typedByDriver(msg, e.model)
+  const makeTyped = msg === undefined || typedByDriver(msg, e.make) || (modelTyped && e.model !== null)
+  if (e.make && !s.vehicle.make && makeTyped) s.vehicle.make = e.make
+  if (e.model && !s.vehicle.model && modelTyped) s.vehicle.model = e.model
   if (e.year && !s.vehicle.year) s.vehicle.year = e.year
   if (e.tire_size && !s.tireSize.value) s.tireSize.value = e.tire_size
   if (e.tire_position && !s.tirePosition) s.tirePosition = e.tire_position
@@ -638,9 +673,9 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       replies.push(META[e.intent])
       // Meta questions can still carry facts ("do you have anyone near
       // Amarillo?" IS their location) — capture silently, per the voice rules.
-      mergeExtraction(s, e)
+      mergeExtraction(s, e, req.message)
     } else {
-      const acks = mergeExtraction(s, e)
+      const acks = mergeExtraction(s, e, req.message)
       // When the problem question is the one on screen, the typed answer IS
       // the problem — accept it even when the extractor nulled it or the
       // word-count gate would ("flat tire" is a fine description). Without

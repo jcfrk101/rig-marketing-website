@@ -122,7 +122,10 @@ export function leadPayload(s: ChatState) {
     city: null,
     state: s.location.state,
     tire_size: s.tireSize.value,
-    tire_position: s.tirePosition,
+    tire_position:
+      [s.tirePosition, s.tireSide && `${s.tireSide} side`, s.tireDual && (s.tireDual === 'both' ? 'both duals' : `${s.tireDual} dual`)]
+        .filter(Boolean)
+        .join(', ') || null,
     has_spare: s.tireSpare,
     tow_dropoff: s.tow.dropoff,
     trailer_info: s.tow.trailerInfo,

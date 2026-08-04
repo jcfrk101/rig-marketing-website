@@ -30,8 +30,19 @@ export const extractionSchema = z.object({
   tire_position: z
     .string()
     .nullable()
-    .describe('normalized tire position if stated — ONLY these terms: steer/drive/trailer, driver/passenger side, inside/outside. e.g. "outside drive, driver side"'),
+    .describe('which axle the tire is on, if stated — ONLY one of: steer, drive, trailer'),
+  tire_side: z.enum(['driver', 'passenger']).nullable().describe('which side of the vehicle, if stated'),
+  tire_dual: z
+    .enum(['inner', 'outer', 'both'])
+    .nullable()
+    .describe('for dual tires (drive/trailer axles): inner, outer, or both, if stated'),
   has_spare: z.boolean().nullable().describe('whether they have a spare tire, if stated'),
+  trailer_work: z
+    .boolean()
+    .nullable()
+    .describe(
+      'true when the work is on the TRAILER itself — trailer axle, bearings, hub, trailer brakes, reefer unit, liftgate, trailer doors, landing gear, trailer tires. false when clearly on the tractor/truck. null if unclear'
+    ),
   tow_dropoff: z.string().nullable().describe('where they want the vehicle towed, if stated'),
   trailer_info: z
     .string()
@@ -223,7 +234,10 @@ export function mockExtract(msg: string): Extraction {
     year: yearMatch ? yearMatch[0] : null,
     tire_size: tireMatch ? tireMatch[0] : null,
     tire_position: has('steer') ? 'steer' : has('drive tire', 'drive axle', 'outside drive', 'inner drive') ? 'drive' : has('trailer tire', 'trailer axle') ? 'trailer' : null,
+    tire_side: has('driver side', 'driver-side', "driver's side") ? 'driver' : has('passenger side', 'passenger-side') ? 'passenger' : null,
+    tire_dual: has('both dual', 'both tires') ? 'both' : has('inner', 'inside dual') ? 'inner' : has('outer', 'outside dual', 'outside drive') ? 'outer' : null,
     has_spare: has('no spare', "don't have a spare") ? false : has('have a spare', 'got a spare') ? true : null,
+    trailer_work: has('trailer axle', 'trailer brake', 'reefer', 'liftgate', 'landing gear', 'trailer bearing', 'trailer hub', 'trailer door') ? true : null,
     tow_dropoff: (msg.match(/tow (?:it |me )?to ([^,.]+)/i) || [])[1] || null,
     trailer_info: has('loaded trailer') ? 'loaded trailer attached' : has('empty trailer') ? 'empty trailer attached' : has('bobtail') ? 'bobtail, no trailer' : null,
     wants_winch: has('winch', 'stuck in the mud', 'stuck in snow', 'in a ditch') ? true : null,

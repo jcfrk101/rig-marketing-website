@@ -205,6 +205,29 @@ function question(slot: SlotId, s: ChatState, reask = false): { replies: string[
           ],
         },
       }
+    case 'tire_side':
+      return {
+        replies: ['**Driver or passenger side?**'],
+        widget: {
+          type: 'chips',
+          options: [
+            { id: 'tireside_driver', label: 'Driver side' },
+            { id: 'tireside_passenger', label: 'Passenger side' },
+          ],
+        },
+      }
+    case 'tire_dual':
+      return {
+        replies: ["**Inner or outer tire?** They're duals back there — helps the mechanic bring the right one."],
+        widget: {
+          type: 'chips',
+          options: [
+            { id: 'tiredual_outer', label: 'Outer' },
+            { id: 'tiredual_inner', label: 'Inner' },
+            { id: 'tiredual_both', label: 'Both' },
+          ],
+        },
+      }
     case 'tire_spare':
       return {
         replies: ['**Do you have a spare?**'],
@@ -309,7 +332,13 @@ export function summaryData(s: ChatState): Record<string, string> {
     Problem: s.problem.description || '—',
     ...(s.service === 'tire'
       ? {
-          Tire: [s.tirePosition, s.tireSpare === true ? 'has spare' : s.tireSpare === false ? 'no spare' : null, s.tireSize.value]
+          Tire: [
+            [s.tirePosition, s.tireSide && `${s.tireSide} side`, s.tireDual && (s.tireDual === 'both' ? 'both duals' : `${s.tireDual} dual`)]
+              .filter(Boolean)
+              .join(', ') || null,
+            s.tireSpare === true ? 'has spare' : s.tireSpare === false ? 'no spare' : null,
+            s.tireSize.value,
+          ]
             .filter(Boolean)
             .join(' · ') || '—',
         }
@@ -335,7 +364,10 @@ function mergeExtraction(s: ChatState, e: Extraction): string[] {
   if (e.year && !s.vehicle.year) s.vehicle.year = e.year
   if (e.tire_size && !s.tireSize.value) s.tireSize.value = e.tire_size
   if (e.tire_position && !s.tirePosition) s.tirePosition = e.tire_position
+  if (e.tire_side && !s.tireSide) s.tireSide = e.tire_side
+  if (e.tire_dual && !s.tireDual) s.tireDual = e.tire_dual
   if (e.has_spare !== null && s.tireSpare === null) s.tireSpare = e.has_spare
+  if (e.trailer_work !== null && s.trailerWork === null) s.trailerWork = e.trailer_work
   if (e.tow_dropoff && !s.tow.dropoff) s.tow.dropoff = e.tow_dropoff
   if (e.trailer_info && !s.tow.trailerInfo) s.tow.trailerInfo = e.trailer_info
   if (e.wants_winch) s.wantsWinch = true
@@ -386,6 +418,8 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       if (!s.service) s.service = 'service'
       replies.push("A winch-out we can do — let's get you pulled out.")
     } else if (a.id.startsWith('tirepos_')) s.tirePosition = a.id.slice(8)
+    else if (a.id.startsWith('tireside_')) s.tireSide = a.id.slice(9)
+    else if (a.id.startsWith('tiredual_')) s.tireDual = a.id.slice(9)
     else if (a.id === 'spare_yes') s.tireSpare = true
     else if (a.id === 'spare_no') s.tireSpare = false
     else if (a.id === 'safe_shoulder') s.safety = 'shoulder'

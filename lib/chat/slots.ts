@@ -44,6 +44,10 @@ export interface ChatState {
   name: string | null
   nameAsked: boolean
   photos: number
+  // One entry per kept photo, in upload order (mirrors the client's thumbnail
+  // strip): the vision readout plus the backend GCS url once verified — the
+  // url is what a delete has to detach server-side.
+  photoItems: { desc: string; url: string | null }[]
   // What the vision model saw in uploaded photos (images themselves are
   // analyzed and discarded — never stored).
   photoSummary: string | null
@@ -75,6 +79,7 @@ export function initialState(): ChatState {
     name: null,
     nameAsked: false,
     photos: 0,
+    photoItems: [],
     photoSummary: null,
     photoNotes: null,
     awaitingPhotoNote: false,

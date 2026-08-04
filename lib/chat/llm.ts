@@ -146,6 +146,12 @@ export const photoSchema = z.object({
   tire_size: z.string().nullable().describe('tire size if legible on a sidewall, e.g. 295/75R22.5'),
   make: z.string().nullable().describe('vehicle make if identifiable'),
   model: z.string().nullable(),
+  vin: z
+    .string()
+    .nullable()
+    .describe(
+      'the full 17-character VIN if one is legible (door-jamb plate, registration, dash plate) — transcribe it exactly, no spaces; null if not fully readable'
+    ),
   useful: z.boolean().describe('false if the photos are unusable (blurry, dark, irrelevant)'),
 })
 export type PhotoAnalysis = z.infer<typeof photoSchema>
@@ -158,6 +164,7 @@ export async function analyzePhotos(dataUrls: string[], context: string): Promis
       tire_size: '295/75R22.5',
       make: null,
       model: null,
+      vin: null,
       useful: true,
     }
   }

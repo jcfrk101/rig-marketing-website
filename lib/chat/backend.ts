@@ -57,13 +57,29 @@ export async function checkOtp(
   }
 }
 
-export async function addPhoto(conversationId: string, dataUrl: string): Promise<void> {
-  if (!backendEnabled()) return
+export async function addPhoto(conversationId: string, dataUrl: string): Promise<string | null> {
+  if (!backendEnabled()) return null
   const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
   try {
-    await post('/chat/photo', { conversation_id: conversationId, base64_image_data: base64 })
+    const out = await post<{ image_url: string | null; reason: string | null }>('/chat/photo', {
+      conversation_id: conversationId,
+      base64_image_data: base64,
+    })
+    return out?.image_url ?? null
   } catch (err) {
     console.error('photo upload failed', err) // never fails the turn — vision readout already captured
+    return null
+  }
+}
+
+export async function removePhoto(conversationId: string, imageUrl: string): Promise<void> {
+  if (!backendEnabled()) return
+  try {
+    await post('/chat/photo/remove', { conversation_id: conversationId, image_url: imageUrl })
+  } catch (err) {
+    // Best-effort: the photo is already gone from the chat state and summary;
+    // an old backend build without this route just leaves an orphan image.
+    console.error('photo remove failed', err)
   }
 }
 

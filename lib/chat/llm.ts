@@ -48,7 +48,7 @@ export const extractionSchema = z.object({
     .string()
     .nullable()
     .describe(
-      "their description of what happened, cleaned up. null if they gave no actual detail — contentless phrases like 'broke down', 'need help', 'truck died' are NOT a problem description"
+      "their description of what happened, cleaned up. Anything that names the failure counts — 'blew a tire', 'engine overheating', 'brakes locked up' are ALL valid problem descriptions. null ONLY when there is zero failure detail: 'broke down', 'need help', 'send someone'"
     ),
   drivable: z.boolean().nullable(),
   safety: z

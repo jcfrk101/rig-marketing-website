@@ -607,6 +607,14 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       mergeExtraction(s, e)
     } else {
       const acks = mergeExtraction(s, e)
+      // When the problem question is the one on screen, the typed answer IS
+      // the problem — accept it even when the extractor nulled it or the
+      // word-count gate would ("flat tire" is a fine description). Without
+      // this, "blew a tire" gets acknowledged and then re-asked.
+      if (activeBefore === 'problem' && !s.problem.description) {
+        const answer = (e.problem || req.message).trim()
+        if (answer.split(/\s+/).length >= 2) s.problem.description = answer
+      }
       // Refusal gate: only explicitly not-offered services get refused, with a
       // redirect to what we CAN do. Unfamiliar repairs are never refused.
       if (e.service_refused && REFUSALS[e.service_refused]) {

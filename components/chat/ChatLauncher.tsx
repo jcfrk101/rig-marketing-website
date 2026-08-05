@@ -79,10 +79,12 @@ export default function ChatLauncher() {
           onClick={launch}
           className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-full bg-rig-green py-3 pl-4 pr-5 font-bold text-rig-navy-deep shadow-xl shadow-black/30 transition hover:bg-rig-green-dark"
         >
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-rig-navy-deep text-sm font-extrabold text-rig-green">
-            R
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-rig-navy-deep text-rig-green">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M21 3H3a1.5 1.5 0 0 0-1.5 1.5v11A1.5 1.5 0 0 0 3 17h3.5v3.6a.5.5 0 0 0 .82.38L12.3 17H21a1.5 1.5 0 0 0 1.5-1.5v-11A1.5 1.5 0 0 0 21 3z" />
+            </svg>
           </span>
-          Broke down? Get help now
+          Chat with Dispatch
         </button>
       )}
     </>

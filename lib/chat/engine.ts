@@ -21,6 +21,7 @@ export type Widget =
   | { type: 'chips'; options: { id: string; label: string; sub?: string }[] }
   | { type: 'text'; placeholder: string }
   | { type: 'location' }
+  | { type: 'map'; lat: number; lng: number; label: string }
   | { type: 'photos' }
   | { type: 'phone' }
   | { type: 'otp' }
@@ -159,30 +160,31 @@ function question(slot: SlotId, s: ChatState, reask = false): { replies: string[
         },
       }
     case 'location': {
-      // Confirm-back: geocoded candidates get tapped, not re-described.
+      // Confirm-back: geocoded candidates get tapped, not re-described. A
+      // single candidate goes straight to the map — the pin IS the confirm.
       if (s.location.candidates?.length) {
         const single = s.location.candidates.length === 1
+        if (single) {
+          const c = s.location.candidates[0]
+          return {
+            replies: [
+              `Looks like you're at **${c.name}** — ${c.address}. **Drag the pin if it's off**, then confirm.`,
+            ],
+            widget: { type: 'map', lat: c.lat, lng: c.lng, label: c.name },
+          }
+        }
         return {
-          replies: [
-            single
-              ? `Looks like you're at **${s.location.candidates[0].name}** — ${s.location.candidates[0].address}. Right?`
-              : '**Which of these matches where you are?**',
-          ],
+          replies: ['**Which of these matches where you are?**'],
           widget: {
             type: 'chips',
-            options: single
-              ? [
-                  { id: 'loc_pick_0', label: "✓ That's right" },
-                  { id: 'loc_none', label: "Not quite — I'll describe it" },
-                ]
-              : [
-                  ...s.location.candidates.map((c, i) => ({
-                    id: `loc_pick_${i}`,
-                    label: `📍 ${c.name}`,
-                    sub: c.address,
-                  })),
-                  { id: 'loc_none', label: 'None of these' },
-                ],
+            options: [
+              ...s.location.candidates.map((c, i) => ({
+                id: `loc_pick_${i}`,
+                label: `📍 ${c.name}`,
+                sub: c.address,
+              })),
+              { id: 'loc_none', label: 'None of these' },
+            ],
           },
         }
       }
@@ -514,18 +516,36 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
     } else if (a.id === 'loc_manual') {
       s.location.attempts += 1 // moves the ladder to the typed fallback
     } else if (a.id.startsWith('loc_pick_')) {
+      // Narrow to the tapped candidate — the map confirm (drag + lock) is the
+      // final word, so resolved stays unset until map_confirm.
       const c = s.location.candidates?.[Number(a.id.slice(9))]
       if (c) {
         s.location.lat = c.lat
         s.location.lng = c.lng
+        if (c.state) s.location.state = c.state
+        s.location.candidates = [c]
+      }
+    } else if (a.id === 'map_confirm' && a.lat !== undefined && a.lng !== undefined) {
+      // Final pin position from the map. If the driver dragged it meaningfully
+      // (~100m+), re-reverse-geocode so the words match the new spot.
+      const c = s.location.candidates?.[0]
+      const moved = !c || Math.abs(a.lat - c.lat) + Math.abs(a.lng! - c.lng) > 0.001
+      s.location.lat = a.lat
+      s.location.lng = a.lng!
+      if (moved) {
+        const rev = await reverseGeocode(a.lat, a.lng!)
+        s.location.resolved = rev.address
+        if (rev.state) s.location.state = rev.state
+      } else {
         s.location.resolved = `${c.name}, ${c.address}`
         if (c.state) s.location.state = c.state
-        s.location.tier = 'gold'
-        s.location.candidates = null
-        replies.push(
-          `Locked in: **${c.name}**. 📍 **${mechanicsNearby(c.name)} mechanics** on the Rig network are within range.`
-        )
       }
+      s.location.tier = 'gold'
+      s.location.candidates = null
+      const label = s.location.resolved.split(',')[0]
+      replies.push(
+        `Locked in: **${label}**. 📍 **${mechanicsNearby(label)} mechanics** on the Rig network are within range.`
+      )
     } else if (a.id === 'loc_none') {
       s.location.candidates = null
       s.location.attempts += 1

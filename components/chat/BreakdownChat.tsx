@@ -4,7 +4,11 @@
 // All conversation logic lives server-side in the turn engine; this component
 // renders messages and the active widget, and reports user actions back.
 import { useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import type { Widget } from '@/lib/chat/engine'
+
+// Leaflet touches `window` — client-only, loaded when the map step renders.
+const MapConfirm = dynamic(() => import('./MapConfirm'), { ssr: false })
 import type { ChatState } from '@/lib/chat/slots'
 import { directoryStates, DIRECTORY_ROOT } from '@/data/directory'
 
@@ -320,6 +324,17 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
               Type it instead
             </button>
           </div>
+        )}
+
+        {!busy && widget?.type === 'map' && (
+          <MapConfirm
+            lat={widget.lat}
+            lng={widget.lng}
+            onConfirm={(lat, lng, moved) =>
+              turn({ action: { id: 'map_confirm', value: moved ? 'Pin adjusted — this is the spot' : '📍 This is the spot', lat, lng } })
+            }
+            onReject={() => turn({ action: { id: 'loc_none', value: "Way off — I'll describe it instead" } })}
+          />
         )}
 
         {!busy && widget?.type === 'photos' && (

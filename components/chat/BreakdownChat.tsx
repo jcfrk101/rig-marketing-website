@@ -52,6 +52,23 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
   // Approximate position for geocode biasing — read ONLY if the browser says
   // permission is already granted (permissions.query never triggers a prompt).
   const geoBias = useRef<{ lat: number; lng: number } | null>(null)
+  // Page journey recorded by the launcher/embed on prior page views (shared
+  // sessionStorage, same origin even inside the /help iframe). Falls back to
+  // this page's own referrer for direct /help visits.
+  const journey = useRef<{ landing: string | null; referrer: string | null; views: number; pages: string[] } | null>(null)
+  useEffect(() => {
+    try {
+      journey.current = JSON.parse(sessionStorage.getItem('rig-journey') || 'null')
+    } catch {}
+    if (!journey.current) {
+      journey.current = {
+        landing: window.location.pathname,
+        referrer: document.referrer || null,
+        views: 1,
+        pages: [window.location.pathname],
+      }
+    }
+  }, [])
 
   const scrollDown = () =>
     requestAnimationFrame(() => streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight, behavior: 'smooth' }))
@@ -69,7 +86,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ state, photosOffered, bias: geoBias.current, ...payload }),
+        body: JSON.stringify({ state, photosOffered, bias: geoBias.current, journey: journey.current, ...payload }),
       })
       const data = await res.json()
       setState(data.state)

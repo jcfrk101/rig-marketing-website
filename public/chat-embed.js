@@ -14,6 +14,22 @@
   var chatUrl = origin + '/help'
   var Z = '2147482000'
 
+  // Journey tracking (shared with the marketing-site launcher via same-origin
+  // sessionStorage): referrer, landing page, pages browsed. The /help iframe
+  // reads it and logs it with any chat that starts.
+  try {
+    var jk = 'rig-journey'
+    var j = JSON.parse(sessionStorage.getItem(jk) || 'null') || {
+      landing: location.pathname,
+      referrer: document.referrer || null,
+      views: 0,
+      pages: [],
+    }
+    j.views++
+    if (j.pages[j.pages.length - 1] !== location.pathname && j.pages.length < 25) j.pages.push(location.pathname)
+    sessionStorage.setItem(jk, JSON.stringify(j))
+  } catch (e) {}
+
   var frame = null
   var open = false
 
@@ -66,4 +82,45 @@
   })
 
   document.body.appendChild(btn)
+
+  // Teaser CTA above the pill: pops 3s after load, on up to 3 page views per
+  // session (counter shared with the marketing-site launcher). Opening the
+  // chat retires it.
+  var TK = 'rig-chat-teaser-shown'
+  function teaserCount() {
+    try { return parseInt(sessionStorage.getItem(TK) || '0', 10) } catch (e) { return 99 }
+  }
+  var teaser = null
+  function retireTeaser() {
+    try { sessionStorage.setItem(TK, '99') } catch (e) {}
+    if (teaser) { teaser.remove(); teaser = null }
+  }
+  btn.addEventListener('click', retireTeaser)
+  if (teaserCount() < 3) {
+    setTimeout(function () {
+      if (open) return
+      teaser = document.createElement('div')
+      teaser.style.cssText =
+        'position:fixed;bottom:86px;right:20px;z-index:' + Z + ';width:264px;background:#1a2127;' +
+        'border:1px solid rgba(10,220,106,.5);border-radius:16px;padding:14px 32px 14px 14px;' +
+        'box-shadow:0 24px 60px rgba(0,0,0,.5);cursor:pointer;' +
+        'font:400 13px/1.4 -apple-system,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif'
+      teaser.innerHTML =
+        '<div style="font-weight:700;font-size:14.5px;color:#fff;line-height:1.35">Chat with us — we’ll send someone out.</div>' +
+        '<div style="margin-top:4px;font-size:12.5px;color:rgba(255,255,255,.55)">Live dispatch · usually minutes to first offers</div>' +
+        '<div data-x style="position:absolute;right:8px;top:8px;width:24px;height:24px;display:grid;place-items:center;' +
+        'border-radius:999px;color:rgba(255,255,255,.4);font-size:13px">✕</div>' +
+        '<div style="position:absolute;bottom:-7px;right:36px;width:14px;height:14px;transform:rotate(45deg);' +
+        'background:#1a2127;border-right:1px solid rgba(10,220,106,.5);border-bottom:1px solid rgba(10,220,106,.5)"></div>'
+      teaser.addEventListener('click', function (e) {
+        if (e.target && e.target.getAttribute && e.target.getAttribute('data-x') !== null) {
+          teaser.remove(); teaser = null // hide this page view; the show already counted
+        } else {
+          retireTeaser(); show()
+        }
+      })
+      document.body.appendChild(teaser)
+      try { sessionStorage.setItem(TK, String(teaserCount() + 1)) } catch (e) {}
+    }, 3000)
+  }
 })()

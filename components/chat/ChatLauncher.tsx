@@ -6,29 +6,52 @@
 import { useEffect, useState } from 'react'
 import BreakdownChat from './BreakdownChat'
 
-const TEASER_DELAY_MS = 6000
-const TEASER_KEY = 'rig-chat-teaser-dismissed'
+const TEASER_DELAY_MS = 3000
+const TEASER_KEY = 'rig-chat-teaser-shown' // count of page views that showed it
+const TEASER_MAX_SHOWS = 3
+const JOURNEY_KEY = 'rig-journey'
 
 export default function ChatLauncher() {
   const [open, setOpen] = useState(false)
   const [everOpened, setEverOpened] = useState(false)
   const [teaser, setTeaser] = useState(false)
 
-  // Teaser CTA: slides in above the pill a beat after the page settles.
-  // Never auto-opens the chat; dismissing it sticks for the session.
+  // Journey tracking: referrer + landing + pages browsed, shared with the
+  // directory embed via sessionStorage — logged with any chat that starts.
   useEffect(() => {
     try {
-      if (sessionStorage.getItem(TEASER_KEY)) return
+      const j = JSON.parse(sessionStorage.getItem(JOURNEY_KEY) || 'null') || {
+        landing: window.location.pathname,
+        referrer: document.referrer || null,
+        views: 0,
+        pages: [],
+      }
+      j.views += 1
+      if (j.pages[j.pages.length - 1] !== window.location.pathname && j.pages.length < 25)
+        j.pages.push(window.location.pathname)
+      sessionStorage.setItem(JOURNEY_KEY, JSON.stringify(j))
     } catch {}
-    const t = setTimeout(() => setTeaser(true), TEASER_DELAY_MS)
+  }, [])
+
+  // Teaser CTA: pops shortly after load, on up to 3 page views per session.
+  // Never auto-opens the chat; opening the chat retires it for the session.
+  useEffect(() => {
+    try {
+      if (parseInt(sessionStorage.getItem(TEASER_KEY) || '0', 10) >= TEASER_MAX_SHOWS) return
+    } catch {}
+    const t = setTimeout(() => {
+      setTeaser(true)
+      try {
+        const c = parseInt(sessionStorage.getItem(TEASER_KEY) || '0', 10)
+        sessionStorage.setItem(TEASER_KEY, String(c + 1))
+      } catch {}
+    }, TEASER_DELAY_MS)
     return () => clearTimeout(t)
   }, [])
 
   function dismissTeaser() {
+    // Hides for this page view only — the show already counted toward the cap.
     setTeaser(false)
-    try {
-      sessionStorage.setItem(TEASER_KEY, '1')
-    } catch {}
   }
 
   function launch() {
@@ -37,7 +60,7 @@ export default function ChatLauncher() {
     setTeaser(false)
     // Anyone who has opened the chat doesn't need the nudge again this session.
     try {
-      sessionStorage.setItem(TEASER_KEY, '1')
+      sessionStorage.setItem(TEASER_KEY, '99')
     } catch {}
   }
 

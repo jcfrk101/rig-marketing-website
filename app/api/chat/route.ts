@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runTurn, TurnRequest, TurnResponse } from '@/lib/chat/engine'
 import { updateLead } from '@/lib/chat/backend'
+import { postChatSlack } from '@/lib/chat/slack'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,6 +44,50 @@ function logTranscript(req: TurnRequest, res: TurnResponse) {
   }
 }
 
+// Live chat activity → the dedicated #chat Slack channel. Every driver
+// interaction posts (not just post-OTP): a "chat started" message with the
+// journey (referrer, landing page, pages browsed) on first input, then a
+// compact per-turn line with everything known so far.
+function slackLog(req: TurnRequest, res: TurnResponse) {
+  const interacted = !!(req.message || req.action || (req.photos && req.photos.length))
+  if (!interacted) return // the greeting render is a view, not an interaction
+  const s = res.state
+  const id = s.conversationId.slice(0, 8)
+  const driverText =
+    req.message ?? req.action?.value ?? req.action?.id ?? `[sent ${req.photos!.length} photo(s)]`
+
+  const known: string[] = []
+  if (s.service) known.push(s.service)
+  if (s.vehicleClass) known.push(s.vehicleClass)
+  if (s.problem.description) known.push(`“${s.problem.description}”`)
+  if (s.location.resolved || s.location.text) known.push(`📍 ${s.location.resolved || s.location.text}`)
+  if (s.name) known.push(s.name)
+  if (s.phone.number) known.push(`📱 …${s.phone.number.slice(-4)}${s.phone.verified ? ' ✓' : ''}`)
+
+  if (!s.slackStarted) {
+    s.slackStarted = true
+    const j = s.journey
+    const ref = j?.referrer || ''
+    const src = !ref
+      ? 'direct / unknown'
+      : /google\./i.test(ref)
+        ? `Google search (${ref})`
+        : /bing\./i.test(ref)
+          ? `Bing search (${ref})`
+          : ref
+    postChatSlack(
+      `🆕 Chat started [${id}]\n` +
+        `From: ${src}\n` +
+        `Landing: ${j?.landing ?? 'unknown'} · ${j?.views ?? 1} page view${(j?.views ?? 1) > 1 ? 's' : ''}\n` +
+        (j?.pages?.length ? `Pages: ${j.pages.slice(-6).join(' → ')}\n` : '') +
+        `First input: ${driverText}` +
+        (known.length ? `\nKnown: ${known.join(' · ')}` : '')
+    )
+  } else {
+    postChatSlack(`💬 [${id}] ${driverText}${known.length ? `\n${known.join(' · ')}` : ''}`)
+  }
+}
+
 // Health/config probe: which LLM provider is this deployment actually running?
 // No secrets exposed — just the switch position and model names.
 export async function GET() {
@@ -65,7 +110,10 @@ export async function POST(req: NextRequest) {
   }
   try {
     const res = await runTurn(body)
+    // Journey binds once, at conversation start, then rides the state.
+    if (!res.state.journey && body.journey) res.state.journey = body.journey
     logTranscript(body, res)
+    slackLog(body, res)
     // Partial-lead snapshot: every post-verification turn upserts the latest
     // structured payload so the stale promoter always has current data.
     if (res.state.phone.verified && !res.state.submitted) {

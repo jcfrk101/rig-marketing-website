@@ -44,25 +44,26 @@ function logTranscript(req: TurnRequest, res: TurnResponse) {
   }
 }
 
-// Live chat activity → the dedicated #chat Slack channel. Every driver
-// interaction posts (not just post-OTP): a "chat started" message with the
-// journey (referrer, landing page, pages browsed) on first input, then a
-// compact per-turn line with everything known so far.
+// Live chat activity → the dedicated #chat Slack channel, transcript-style:
+// a "chat started" message with the journey (referrer, landing page, pages
+// browsed) on first input, then one Q/A line per driver input — the question
+// that was on screen and what came back. The end-of-chat summary is posted by
+// the backend on submit (New web-chat lead / PARTIAL).
+const plain = (text: string) => text.replace(/\*\*/g, '').replace(/\s+/g, ' ').trim()
+
 function slackLog(req: TurnRequest, res: TurnResponse) {
   const interacted = !!(req.message || req.action || (req.photos && req.photos.length))
+  // What the driver was answering — the question shown before this input.
+  const asked = req.state?.lastQuestion ?? null
+  // Remember what this turn asked, for the next input's Q line.
+  const lastReply = res.replies[res.replies.length - 1]
+  res.state.lastQuestion = lastReply ? plain(lastReply).slice(0, 200) : res.state.lastQuestion
   if (!interacted) return // the greeting render is a view, not an interaction
+
   const s = res.state
   const id = s.conversationId.slice(0, 8)
-  const driverText =
+  const answer =
     req.message ?? req.action?.value ?? req.action?.id ?? `[sent ${req.photos!.length} photo(s)]`
-
-  const known: string[] = []
-  if (s.service) known.push(s.service)
-  if (s.vehicleClass) known.push(s.vehicleClass)
-  if (s.problem.description) known.push(`“${s.problem.description}”`)
-  if (s.location.resolved || s.location.text) known.push(`📍 ${s.location.resolved || s.location.text}`)
-  if (s.name) known.push(s.name)
-  if (s.phone.number) known.push(`📱 …${s.phone.number.slice(-4)}${s.phone.verified ? ' ✓' : ''}`)
 
   if (!s.slackStarted) {
     s.slackStarted = true
@@ -80,11 +81,10 @@ function slackLog(req: TurnRequest, res: TurnResponse) {
         `From: ${src}\n` +
         `Landing: ${j?.landing ?? 'unknown'} · ${j?.views ?? 1} page view${(j?.views ?? 1) > 1 ? 's' : ''}\n` +
         (j?.pages?.length ? `Pages: ${j.pages.slice(-6).join(' → ')}\n` : '') +
-        `First input: ${driverText}` +
-        (known.length ? `\nKnown: ${known.join(' · ')}` : '')
+        `First input: ${answer}`
     )
   } else {
-    postChatSlack(`💬 [${id}] ${driverText}${known.length ? `\n${known.join(' · ')}` : ''}`)
+    postChatSlack(`[${id}]${asked ? ` Q: ${asked}\n` : ' '}A: ${answer}`)
   }
 }
 

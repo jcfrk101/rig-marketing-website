@@ -65,6 +65,9 @@ export interface ChatState {
   journey: { landing: string | null; referrer: string | null; views: number; pages: string[] } | null
   // First interaction already announced to the Slack chat channel.
   slackStarted: boolean
+  // The question shown to the driver at the end of the previous turn — what
+  // their next input is answering. Drives the Q/A transcript in Slack.
+  lastQuestion: string | null
 }
 
 export const MAX_ATTEMPTS = 3
@@ -100,6 +103,7 @@ export function initialState(): ChatState {
     submitted: false,
     journey: null,
     slackStarted: false,
+    lastQuestion: null,
   }
 }
 

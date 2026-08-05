@@ -132,5 +132,9 @@ export function leadPayload(s: ChatState) {
     photo_summary: s.photoSummary,
     photo_notes: s.photoNotes,
     flags: computeFlags(s),
+    // Compact provenance line for the dispatcher notes ("Came from: ...").
+    journey: s.journey
+      ? `${s.journey.referrer || 'direct'} -> ${s.journey.landing || '?'} (${s.journey.views} page view${s.journey.views > 1 ? 's' : ''})`
+      : null,
   }
 }

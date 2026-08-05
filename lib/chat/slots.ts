@@ -60,6 +60,11 @@ export interface ChatState {
   phone: { number: string | null; verified: boolean; otpSent: boolean }
   flags: string[]
   submitted: boolean
+  // Where the driver came from (referrer, landing page, pages browsed) —
+  // captured client-side at conversation start, logged with the chat.
+  journey: { landing: string | null; referrer: string | null; views: number; pages: string[] } | null
+  // First interaction already announced to the Slack chat channel.
+  slackStarted: boolean
 }
 
 export const MAX_ATTEMPTS = 3
@@ -93,6 +98,8 @@ export function initialState(): ChatState {
     phone: { number: null, verified: false, otpSent: false },
     flags: [],
     submitted: false,
+    journey: null,
+    slackStarted: false,
   }
 }
 

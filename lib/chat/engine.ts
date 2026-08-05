@@ -38,6 +38,9 @@ export interface TurnRequest {
   // Approximate device position, read silently when geolocation permission was
   // already granted (never prompted for). Used only to bias geocoding.
   bias?: { lat: number; lng: number } | null
+  // Client-captured page journey (referrer, landing, pages) — bound to the
+  // conversation on its first turn by the API route.
+  journey?: { landing: string | null; referrer: string | null; views: number; pages: string[] } | null
 }
 
 export interface TurnResponse {

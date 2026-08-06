@@ -34,12 +34,12 @@
   var open = false
 
   var btn = document.createElement('button')
-  btn.setAttribute('aria-label', 'Broke down? Chat with Dispatch')
+  btn.setAttribute('aria-label', 'Need a Mechanic? Chat Now')
   btn.innerHTML =
     '<span style="display:inline-grid;place-items:center;width:28px;height:28px;border-radius:999px;background:#222b32;color:#0adc6a;margin-right:10px">' +
     '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
     '<path d="M21 3H3a1.5 1.5 0 0 0-1.5 1.5v11A1.5 1.5 0 0 0 3 17h3.5v3.6a.5.5 0 0 0 .82.38L12.3 17H21a1.5 1.5 0 0 0 1.5-1.5v-11A1.5 1.5 0 0 0 21 3z"/>' +
-    '</svg></span>Broke down? Chat with Dispatch'
+    '</svg></span>Need a Mechanic? Chat Now'
   btn.style.cssText =
     'position:fixed;bottom:20px;right:20px;z-index:' + Z + ';display:flex;align-items:center;' +
     'background:#0adc6a;color:#222b32;border:none;border-radius:999px;padding:12px 20px 12px 16px;' +

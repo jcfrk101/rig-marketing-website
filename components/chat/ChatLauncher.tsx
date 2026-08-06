@@ -107,7 +107,7 @@ export default function ChatLauncher() {
               <path d="M21 3H3a1.5 1.5 0 0 0-1.5 1.5v11A1.5 1.5 0 0 0 3 17h3.5v3.6a.5.5 0 0 0 .82.38L12.3 17H21a1.5 1.5 0 0 0 1.5-1.5v-11A1.5 1.5 0 0 0 21 3z" />
             </svg>
           </span>
-          Chat with Dispatch
+          Broke down? Chat with Dispatch
         </button>
       )}
     </>

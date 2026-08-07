@@ -134,7 +134,7 @@ export function leadPayload(s: ChatState) {
     flags: computeFlags(s),
     // Compact provenance line for the dispatcher notes ("Came from: ...").
     journey: s.journey
-      ? `${s.journey.referrer || 'direct'} -> ${s.journey.landing || '?'} (${s.journey.views} page view${s.journey.views > 1 ? 's' : ''})`
+      ? `${s.journey.device || '?'} · ${s.journey.referrer || 'direct'} -> ${s.journey.landing || '?'} (${s.journey.views} page view${s.journey.views > 1 ? 's' : ''})`
       : null,
   }
 }

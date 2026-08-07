@@ -4,10 +4,12 @@
 //
 // Strategy: Google Places Text Search first (landmarks, truck stops, exits —
 // far better than plain Geocoding for named places), Geocoding API as
-// fallback (addresses, towns). Mile markers are deliberately not attempted —
-// the question ladder steers drivers to the nearest exit instead.
-// Uses the same Google API key the phone flow's resolver runs on
-// (GOOGLE_MAPS_API_KEY env). TODO: add Mile1 for corridor-aware results.
+// fallback (addresses, towns). Highway/milepost-sounding text additionally
+// goes to rig-web-services' typed resolver (POST /chat/location/resolve →
+// ResolveTranscriptLocationAction), whose Mile1 integration turns
+// "I-40 westbound mm 214" into a coordinate — the one shape this module's
+// Google stack can't handle. Uses the same Google API key the phone flow's
+// resolver runs on (GOOGLE_MAPS_API_KEY env).
 
 export interface GeoCandidate {
   name: string // display label, e.g. "Pilot Travel Center"
@@ -94,6 +96,60 @@ async function geocodeSearch(q: string, biasPoint?: { lat: number; lng: number }
   return []
 }
 
+// ---- rig-web-services typed resolver (Mile1 mileposts) ----
+// Server-to-server, same envs as backend.ts. Fails soft — chat never blocks
+// on it: hard 9s abort against the action's internal 12s resolver timeout.
+const RIG_BASE = () => process.env.RIG_API_URL || ''
+const RIG_KEY = () => process.env.RIG_API_KEY || ''
+
+// Worth a backend round-trip when the text talks like a highway: mile
+// markers/posts, exit numbers, or a route designation (I-40, US 287, SR-99).
+export const looksMilepostish = (t: string) =>
+  /\b(?:mm|mile\s*(?:marker|post)?|milepost)\s*#?\s*\d+/i.test(t) ||
+  /\bexit\s*#?\s*\d+/i.test(t) ||
+  /\b(?:i|us|sr|rt|hwy|highway|route)[-\s]?\d{1,3}\b/i.test(t)
+
+async function backendResolve(
+  transcript: string,
+  conversationId: string | null,
+  fallbackState?: string | null
+): Promise<GeoCandidate[]> {
+  if (!RIG_BASE() || !RIG_KEY()) return []
+  const ctl = new AbortController()
+  const timer = setTimeout(() => ctl.abort(), 9000)
+  try {
+    const res = await fetch(`${RIG_BASE()}/chat/location/resolve`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'Rig-Api-Key': RIG_KEY() },
+      body: JSON.stringify({
+        transcript,
+        conversation_id: conversationId ?? 'web-chat',
+        fallback_city: null,
+        fallback_state: fallbackState ? fallbackState.toUpperCase() : null,
+      }),
+      cache: 'no-store',
+      signal: ctl.signal,
+    })
+    const data = await res.json()
+    if (data?.resolved && typeof data.latitude === 'number' && typeof data.longitude === 'number') {
+      return [
+        {
+          name: data.label || transcript,
+          address: data.label || '',
+          lat: data.latitude,
+          lng: data.longitude,
+          state: data.state ? String(data.state).toLowerCase() : null,
+        },
+      ]
+    }
+  } catch {
+    // backend unavailable or slow — Google candidates carry the turn
+  } finally {
+    clearTimeout(timer)
+  }
+  return []
+}
+
 const kmBetween = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
   const R = 6371
   const dLat = ((b.lat - a.lat) * Math.PI) / 180
@@ -117,19 +173,27 @@ export async function resolveLocation(
   query: string,
   biasState?: string | null,
   biasPoint?: { lat: number; lng: number } | null,
-  rawText?: string | null
+  rawText?: string | null,
+  conversationId?: string | null
 ): Promise<GeoCandidate[]> {
   if (!KEY()) return []
   const q = biasState && !query.toLowerCase().includes(biasState) ? `${query} ${biasState.toUpperCase()}` : query
 
-  const [composed, raw, geo] = await Promise.all([
+  // Highway-sounding text goes to the backend's typed resolver in parallel —
+  // its Mile1 milepost answer leads the candidates when it lands, because
+  // Places reliably geocodes "I-40 mm 214" to the wrong town center.
+  const transcript = (rawText && rawText.trim()) || query
+  const wantBackend = looksMilepostish(transcript)
+
+  const [milepost, composed, raw, geo] = await Promise.all([
+    wantBackend ? backendResolve(transcript, conversationId ?? null, biasState) : Promise.resolve([]),
     placesSearch(q, biasPoint),
     rawText && rawText.trim() !== q ? placesSearch(rawText, biasPoint) : Promise.resolve([]),
     geocodeSearch(q, biasPoint),
   ])
 
   const merged: GeoCandidate[] = []
-  for (const candidate of [...composed, ...raw, ...geo]) {
+  for (const candidate of [...milepost, ...composed, ...raw, ...geo]) {
     if (merged.length >= 3) break
     if (merged.some((existing) => kmBetween(existing, candidate) < 2)) continue
     merged.push(candidate)

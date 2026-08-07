@@ -41,7 +41,7 @@ export interface TurnRequest {
   bias?: { lat: number; lng: number } | null
   // Client-captured page journey (referrer, landing, pages) — bound to the
   // conversation on its first turn by the API route.
-  journey?: { landing: string | null; referrer: string | null; views: number; pages: string[] } | null
+  journey?: { landing: string | null; referrer: string | null; views: number; pages: string[]; device?: string } | null
 }
 
 export interface TurnResponse {

@@ -48,6 +48,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [otp, setOtp] = useState(['', '', '', ''])
   const [phoneError, setPhoneError] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const [failed, setFailed] = useState(false)
   const streamRef = useRef<HTMLDivElement>(null)
   const otpRefs = useRef<(HTMLInputElement | null)[]>([])
@@ -225,7 +226,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
   return (
     <div className="flex h-full flex-col bg-rig-navy-deep text-white">
       {/* Header */}
-      <header className="flex items-center justify-center border-b border-white/10 bg-[#1a2127] px-4 py-3">
+      <header className="relative flex items-center justify-center border-b border-white/10 bg-[#1a2127] px-4 py-3">
         <div className="flex w-full max-w-xl items-center gap-3">
         <div className="grid h-9 w-9 place-items-center rounded-lg bg-rig-green text-lg font-extrabold text-rig-navy-deep">R</div>
         <div className="flex-1">
@@ -242,6 +243,24 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
           <br />
           <b className="text-rig-green">1 (855) 744-2223</b>
         </a>
+        <button
+          onClick={() => setHelpOpen(!helpOpen)}
+          aria-label="How this chat works"
+          aria-expanded={helpOpen}
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/25 text-[12px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white"
+        >
+          i
+        </button>
+        {helpOpen && (
+          <div
+            onClick={() => setHelpOpen(false)}
+            className="absolute right-4 top-full z-20 mt-2 w-72 cursor-pointer rounded-xl border border-rig-green/50 bg-[#1a2127] p-3.5 text-[12.5px] leading-relaxed text-white/85 shadow-2xl"
+          >
+            I&apos;m an AI assistant — I collect the basics: problem, vehicle, and location. Then a{' '}
+            <b className="text-white">human dispatcher</b> reviews everything, confirms any details with
+            you, and sends your request to nearby mechanics.
+          </div>
+        )}
         {onClose && (
           <button
             onClick={onClose}

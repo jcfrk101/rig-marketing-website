@@ -62,7 +62,7 @@ export interface ChatState {
   submitted: boolean
   // Where the driver came from (referrer, landing page, pages browsed) —
   // captured client-side at conversation start, logged with the chat.
-  journey: { landing: string | null; referrer: string | null; views: number; pages: string[] } | null
+  journey: { landing: string | null; referrer: string | null; views: number; pages: string[]; device?: string } | null
   // First interaction already announced to the Slack chat channel.
   slackStarted: boolean
   // The question shown to the driver at the end of the previous turn — what

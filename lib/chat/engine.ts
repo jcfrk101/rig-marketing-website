@@ -41,7 +41,7 @@ export interface TurnRequest {
   bias?: { lat: number; lng: number } | null
   // Client-captured page journey (referrer, landing, pages) — bound to the
   // conversation on its first turn by the API route.
-  journey?: { landing: string | null; referrer: string | null; views: number; pages: string[] } | null
+  journey?: { landing: string | null; referrer: string | null; views: number; pages: string[]; device?: string } | null
 }
 
 export interface TurnResponse {
@@ -730,7 +730,7 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
           s.location.lat !== null && s.location.lng !== null
             ? { lat: s.location.lat, lng: s.location.lng }
             : req.bias || null
-        const cands = await resolveLocation(e.location_query, s.location.state, biasPoint, e.location_text)
+        const cands = await resolveLocation(e.location_query, s.location.state, biasPoint, e.location_text, s.conversationId)
         if (cands.length) {
           s.location.candidates = cands
           gotCandidates = true

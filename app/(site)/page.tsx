@@ -1,3 +1,4 @@
+import AnnouncementBar from '@/components/AnnouncementBar'
 import Hero from '@/components/Hero'
 import ChatLauncher from '@/components/chat/ChatLauncher'
 import NetworkCoverage from '@/components/NetworkCoverage'
@@ -10,6 +11,7 @@ import CTASection from '@/components/CTASection'
 export default function Home() {
   return (
     <>
+      <AnnouncementBar />
       <Hero />
       <NetworkCoverage />
       <ServiceStats />

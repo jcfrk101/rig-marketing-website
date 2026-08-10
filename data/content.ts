@@ -125,10 +125,10 @@ export const executionFlow = {
       step: '02',
       key: 'payment',
       title: 'Payment',
-      summary: 'Approve pricing and pay by card, WEX Express Code, or T-Chek.',
+      summary: 'Approve pricing and pay by card, EFS, WEX Express Code, or T-Chek.',
       copy: 'Authorize, approve, and settle in-platform. A pre-authorization hold confirms funds and payment only processes once service is complete — no card read over the phone, no surprise invoices.',
       bullets: [
-        'Pay by credit card, WEX Express Code, or T-Chek',
+        'Pay by credit card, EFS, WEX Express Code, or T-Chek',
         'Pre-authorization hold — charged only after service',
         'Approval controls and transparent line-item pricing',
       ],

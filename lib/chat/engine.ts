@@ -66,6 +66,8 @@ const META: Record<string, string> = {
   meta_who:
     "Honest answer: I'm an AI chat bot 🤖 — but I'm just the intake. Once I've got the important details, a **human dispatcher** takes over and routes your request to several mechanics close to you. The robot part is only so you get help faster at 2am.",
   meta_coverage: 'Yes — **we have mechanics wherever you need them**, nationwide.',
+  meta_payment:
+    'We take **EFS Payments**, WEX Express Codes, T-Chek, and credit cards — payment settles through Rig only after the work is done.',
   meta_insurance:
     "We don't bill insurance or warranties directly, but we can send you an itemized invoice to submit for reimbursement.",
 }

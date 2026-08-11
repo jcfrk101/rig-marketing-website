@@ -35,7 +35,7 @@ export const ownerOperators = {
       'Open the app and sign up with a phone number',
       'Select one of three main options: Tire, Tow, Service',
       'Add your vehicle and follow the simple flow to send your request',
-      'Accept the best offer from a mechanic and watch things get done. Enjoy!',
+      'Accept the best offer, pay by card or EFS when the work is done, and get back on the road. Enjoy!',
     ],
   },
   callout: {
@@ -74,7 +74,7 @@ export const shops = {
       { title: 'Accept available requests', copy: 'Browse incoming driver requests near you and take the jobs you want.' },
       { title: 'Create requests manually', copy: 'Already have a driver on the line? Create a request with a phone number.' },
       { title: 'Send offers your way', copy: 'Quote the job and send an offer directly to the driver.' },
-      { title: 'Complete work and get paid', copy: 'Start the service, complete it, and get paid through the app.' },
+      { title: 'Complete work and get paid', copy: 'Start the service, complete it, and get paid through the app — card and EFS jobs alike.' },
     ],
   },
   steps: {
@@ -117,7 +117,7 @@ export const products = {
         'Rig Fleet runs the entire response when a unit goes down — dispatching, payment, fulfillment, and documentation — and logs every job to the unit’s history automatically.',
       bullets: [
         'Dispatch to internal mechanics and 6,000+ network providers',
-        'In-platform approval, payment, and live status for every party',
+        'In-platform approval, payment, and live status — EFS, WEX, and T-Chek accepted',
         'Every repair documented to the unit — export-ready records',
       ],
       primaryCta: { label: 'Book a demo', href: links.demo },
@@ -146,6 +146,7 @@ export const products = {
       bullets: [
         'Tire, tow, and mobile service requests',
         'Compare offers and track the mechanic to your location',
+        'Pay by card or EFS — settled in-app when the work is done',
         'Backed by the 24/7 national call center',
       ],
       primaryCta: { label: 'Get the Driver app', href: links.driverAppIos },

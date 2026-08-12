@@ -52,7 +52,13 @@ export interface TurnResponse {
   userEcho?: string
 }
 
-const REDIRECT = "This chat is just for getting you unstuck — for everything else, head to bigrig.app."
+// Scope-lock nudge for genuinely off-topic messages. Flow-preserving: the
+// current question re-renders right below it — never a send-away (drivers
+// are already on bigrig.app, and "go elsewhere" reads as a brush-off).
+const REDIRECT = "No worries — my whole job here is getting you rolling again, so let's stick to that."
+// Pure politeness ("ok", "thanks") must never hit the off-topic path — the
+// extractor sometimes classifies it that way and the redirect reads rude.
+const PLEASANTRY = /^[\s!.,]*((ok(ay)?|k+|thanks?(\s+(you|u))?|ty|thx|great|cool|perfect|sounds good|got it|alright|awesome|nice)[\s!.,]*)+$/i
 const META: Record<string, string> = {
   // Pricing rule (voice-agent prompt): never quote repair prices — mechanics
   // price after details are confirmed. The $10 deposit is the only number.
@@ -290,7 +296,7 @@ function question(slot: SlotId, s: ChatState, reask = false): { replies: string[
         widget: { type: 'phone' },
       }
     case 'summary':
-      return { replies: ["Here's what I'm sending to dispatch:"], widget: { type: 'summary', data: summaryData(s) } }
+      return { replies: ["Here's what I'm sending to nearby mechanics:"], widget: { type: 'summary', data: summaryData(s) } }
     case 'declined':
       // Declines carry their legitimate escape hatches (voice-agent rules):
       // cars qualify for winch-outs; gas pickups/vans for tires and winch-outs.
@@ -605,7 +611,7 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       const result = await submitLead(s)
       if (!result.submitted) {
         replies.push(
-          "That didn't go through on our side — tap **Send to dispatch** again, or call **1 (855) 744-2223** and we'll take it by phone."
+          "That didn't go through on our side — tap **Send to Nearby Mechanics** again, or call **1 (855) 744-2223** and we'll take it by phone."
         )
         return {
           replies,
@@ -684,11 +690,24 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       photosOffered,
       userEcho,
     }
+  } else if (req.message && s.submitted) {
+    // Post-submit messages ("thank you", follow-ups) get warmth, never the
+    // scope-lock — their request is already with dispatch.
+    userEcho = req.message
+    replies.push(
+      "Anytime — you're all set. **Offers land by text** in the next few minutes, and this window can close whenever."
+    )
+    return { replies, widget: { type: 'done' }, state: s, photosOffered, userEcho }
   } else if (req.message && s.awaitingPhotoNote) {
     userEcho = req.message
     s.photoNotes = s.photoNotes ? `${s.photoNotes}; ${req.message}` : req.message
     s.awaitingPhotoNote = false
     replies.push('Noted — that goes to the dispatcher and mechanics along with the photo readout.')
+  } else if (req.message && PLEASANTRY.test(req.message)) {
+    // "ok" / "thanks" mid-flow: acknowledge and let the current question
+    // re-render below — no extraction, no chance of a scope-lock misfire.
+    userEcho = req.message
+    replies.push('👍')
   } else if (req.message) {
     userEcho = req.message
     const e = await extract(req.message, contextLine(s, activeBefore))

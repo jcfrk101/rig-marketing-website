@@ -447,10 +447,10 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
               </table>
             </div>
             <button
-              onClick={() => turn({ action: { id: 'submit', value: 'Send to dispatch' } })}
+              onClick={() => turn({ action: { id: 'submit', value: 'Send to Nearby Mechanics' } })}
               className="w-full rounded-full bg-rig-green px-4 py-3 text-[15px] font-extrabold text-rig-navy-deep hover:bg-rig-green-dark"
             >
-              Send to dispatch
+              Send to Nearby Mechanics
             </button>
           </div>
         )}

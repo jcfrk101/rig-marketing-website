@@ -122,6 +122,11 @@ export function leadPayload(s: ChatState) {
     city: null,
     state: s.location.state,
     tire_size: s.tireSize.value,
+    // Structured tire location — drives the mechanic-facing TirePositions
+    // grid server-side; the composed tire_position below feeds the notes.
+    tire_axle: s.tirePosition,
+    tire_side: s.tireSide,
+    tire_dual: s.tireDual,
     tire_position:
       [s.tirePosition, s.tireSide && `${s.tireSide} side`, s.tireDual && (s.tireDual === 'both' ? 'both duals' : `${s.tireDual} dual`)]
         .filter(Boolean)

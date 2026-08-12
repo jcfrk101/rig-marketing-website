@@ -59,6 +59,19 @@ const REDIRECT = "No worries — my whole job here is getting you rolling again,
 // Pure politeness ("ok", "thanks") must never hit the off-topic path — the
 // extractor sometimes classifies it that way and the redirect reads rude.
 const PLEASANTRY = /^[\s!.,]*((ok(ay)?|k+|thanks?(\s+(you|u))?|ty|thx|great|cool|perfect|sounds good|got it|alright|awesome|nice)[\s!.,]*)+$/i
+
+// A bare answer to the name question IS the name — the extractor sometimes
+// fails to recognize uncommon names ("Gerhard") and misroutes them off-topic,
+// and name is asked exactly once, so a miss loses it silently.
+const NAME_STOPLIST = new Set(['no', 'nope', 'skip', 'yes', 'yeah', 'why', 'na', 'none', 'nothing'])
+function looksLikeName(msg: string): boolean {
+  const m = msg.trim()
+  return (
+    /^[a-zA-Z][a-zA-Z.'-]*(\s+[a-zA-Z.'-]+){0,2}$/.test(m) &&
+    m.length <= 40 &&
+    !NAME_STOPLIST.has(m.toLowerCase())
+  )
+}
 const META: Record<string, string> = {
   // Pricing rule (voice-agent prompt): never quote repair prices — mechanics
   // price after details are confirmed. The $10 deposit is the only number.
@@ -698,6 +711,15 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       "Anytime — you're all set. **Offers land by text** in the next few minutes, and this window can close whenever."
     )
     return { replies, widget: { type: 'done' }, state: s, photosOffered, userEcho }
+  } else if (req.message && activeBefore === 'name' && !s.name && looksLikeName(req.message)) {
+    // Name-shaped answer to the name question: bind it directly, no LLM.
+    userEcho = req.message
+    s.name = req.message
+      .trim()
+      .replace(/\s+/g, ' ')
+      .split(' ')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ')
   } else if (req.message && s.awaitingPhotoNote) {
     userEcho = req.message
     s.photoNotes = s.photoNotes ? `${s.photoNotes}; ${req.message}` : req.message
@@ -713,6 +735,9 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
     const e = await extract(req.message, contextLine(s, activeBefore))
     if (e.intent === 'off_topic') {
       replies.push(REDIRECT)
+      // Even a misclassified message can carry facts — capture silently so an
+      // extractor misfire never drops data on the floor.
+      mergeExtraction(s, e, req.message)
     } else if (e.intent.startsWith('meta_')) {
       replies.push(META[e.intent])
       // Meta questions can still carry facts ("do you have anyone near

@@ -309,7 +309,7 @@ function question(slot: SlotId, s: ChatState, reask = false): { replies: string[
         widget: { type: 'phone' },
       }
     case 'summary':
-      return { replies: ["Here's what I'm sending to nearby mechanics:"], widget: { type: 'summary', data: summaryData(s) } }
+      return { replies: ["Here's what I'll send to nearby mechanics — **click Send below.**"], widget: { type: 'summary', data: summaryData(s) } }
     case 'declined':
       // Declines carry their legitimate escape hatches (voice-agent rules):
       // cars qualify for winch-outs; gas pickups/vans for tires and winch-outs.

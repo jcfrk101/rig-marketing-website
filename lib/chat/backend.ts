@@ -106,6 +106,19 @@ export async function submitLead(state: ChatState): Promise<{ submitted: boolean
   }
 }
 
+// Structured city for the dispatcher's address block, parsed from the
+// confirmed address text ("344 Hilltop Dr, Chula Vista, CA 91910, USA").
+// The full text still rides location_text and the notes.
+function cityFrom(text: string | null): string | null {
+  if (!text) return null
+  const parts = text.split(',').map((p) => p.trim()).filter(Boolean)
+  if (parts.length < 3) return null
+  const last = parts[parts.length - 1]
+  const idx = /^(usa|united states)$/i.test(last) ? parts.length - 3 : parts.length - 2
+  const city = parts[idx]
+  return city && !/\d/.test(city) ? city : null
+}
+
 // Maps chat state to the backend's ChatLeadPayload (snake_case contract).
 export function leadPayload(s: ChatState) {
   return {
@@ -119,8 +132,8 @@ export function leadPayload(s: ChatState) {
     latitude: s.location.lat,
     longitude: s.location.lng,
     location_text: s.location.resolved || s.location.text,
-    city: null,
-    state: s.location.state,
+    city: cityFrom(s.location.resolved || s.location.text),
+    state: s.location.state ? s.location.state.toUpperCase() : null,
     tire_size: s.tireSize.value,
     // Structured tire location — drives the mechanic-facing TirePositions
     // grid server-side; the composed tire_position below feeds the notes.

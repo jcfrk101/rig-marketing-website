@@ -674,6 +674,8 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       if (decoded.make) s.vehicle.make = decoded.make
       if (decoded.model) s.vehicle.model = decoded.model
       if (decoded.year) s.vehicle.year = decoded.year
+      // Keep the VIN itself — it rides to dispatch as Vehicle.vinNumber.
+      s.vehicle.vin = vin!.replace(/[^a-z0-9]/gi, '').toUpperCase()
     }
     s.photoSummary = s.photoItems.map((p) => p.desc).join('; ') || null
     const anyUseful = analyses.some((a) => a.useful)

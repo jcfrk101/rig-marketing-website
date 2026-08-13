@@ -21,7 +21,7 @@ export interface ChatState {
 
   service: ServiceType | null
 
-  vehicle: { make: string | null; model: string | null; year: string | null; tier: Tier; attempts: number }
+  vehicle: { make: string | null; model: string | null; year: string | null; vin: string | null; tier: Tier; attempts: number }
   tireSize: { value: string | null; attempts: number } // required only when there's NO spare
   tirePosition: string | null // which axle: steer / drive / trailer
   tireSide: string | null // driver / passenger (voice-agent rule: always collect)
@@ -79,7 +79,7 @@ export function initialState(): ChatState {
     fuel: null,
     declined: false,
     service: null,
-    vehicle: { make: null, model: null, year: null, tier: 'missing', attempts: 0 },
+    vehicle: { make: null, model: null, year: null, vin: null, tier: 'missing', attempts: 0 },
     tireSize: { value: null, attempts: 0 },
     tirePosition: null,
     tireSide: null,

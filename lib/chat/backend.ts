@@ -157,5 +157,9 @@ export function leadPayload(s: ChatState) {
     journey: s.journey
       ? `${s.journey.device || '?'} · ${s.journey.referrer || 'direct'} -> ${s.journey.landing || '?'} (${s.journey.views} page view${s.journey.views > 1 ? 's' : ''})`
       : null,
+    // Google Ads click ID (when the visitor came from an ad) — lets the
+    // backend report this lead to Google as an offline click conversion.
+    ad_click_id: s.journey?.click?.id ?? null,
+    ad_click_kind: s.journey?.click?.kind ?? null,
   }
 }

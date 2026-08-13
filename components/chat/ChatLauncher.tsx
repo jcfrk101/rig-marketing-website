@@ -29,6 +29,18 @@ export default function ChatLauncher() {
       j.views += 1
       if (j.pages[j.pages.length - 1] !== window.location.pathname && j.pages.length < 25)
         j.pages.push(window.location.pathname)
+      // Google Ads click ID — kept so a chat lead can be uploaded to Google
+      // as an offline click conversion. First click of the session wins.
+      if (!j.click) {
+        const qs = new URLSearchParams(window.location.search)
+        for (const kind of ['gclid', 'gbraid', 'wbraid'] as const) {
+          const id = qs.get(kind)
+          if (id) {
+            j.click = { kind, id }
+            break
+          }
+        }
+      }
       sessionStorage.setItem(JOURNEY_KEY, JSON.stringify(j))
     } catch {}
   }, [])

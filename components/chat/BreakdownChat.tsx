@@ -60,7 +60,13 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
   // Page journey recorded by the launcher/embed on prior page views (shared
   // sessionStorage, same origin even inside the /help iframe). Falls back to
   // this page's own referrer for direct /help visits.
-  const journey = useRef<{ landing: string | null; referrer: string | null; views: number; pages: string[] } | null>(null)
+  const journey = useRef<{
+    landing: string | null
+    referrer: string | null
+    views: number
+    pages: string[]
+    click?: { kind: 'gclid' | 'gbraid' | 'wbraid'; id: string } | null
+  } | null>(null)
   useEffect(() => {
     try {
       journey.current = JSON.parse(sessionStorage.getItem('rig-journey') || 'null')
@@ -73,6 +79,19 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
         pages: [window.location.pathname],
       }
     }
+    // Google Ads click ID on /help's own URL — the new-tab fallback path,
+    // where the landing page's sessionStorage doesn't follow. A click ID
+    // passed explicitly beats whatever the stored journey has.
+    try {
+      const qs = new URLSearchParams(window.location.search)
+      for (const kind of ['gclid', 'gbraid', 'wbraid'] as const) {
+        const id = qs.get(kind)
+        if (id) {
+          journey.current.click = { kind, id }
+          break
+        }
+      }
+    } catch {}
   }, [])
 
   const scrollDown = () =>

@@ -27,6 +27,17 @@
     }
     j.views++
     if (j.pages[j.pages.length - 1] !== location.pathname && j.pages.length < 25) j.pages.push(location.pathname)
+    // Google Ads click ID (gclid/gbraid/wbraid) — kept for the session so a
+    // chat lead can be reported back to Google as an offline click conversion.
+    // First click wins: don't overwrite one captured on the landing page.
+    if (!j.click) {
+      var qs = new URLSearchParams(location.search)
+      var kinds = ['gclid', 'gbraid', 'wbraid']
+      for (var ki = 0; ki < kinds.length; ki++) {
+        var cv = qs.get(kinds[ki])
+        if (cv) { j.click = { kind: kinds[ki], id: cv }; break }
+      }
+    }
     sessionStorage.setItem(jk, JSON.stringify(j))
   } catch (e) {}
 
@@ -34,6 +45,9 @@
   var open = false
 
   var btn = document.createElement('button')
+  // Stable hook for page CTAs (e.g. the RV chat box) to open the widget
+  // programmatically — the visible label/aria-label copy changes over time.
+  btn.setAttribute('data-rig-chat-launcher', '1')
   btn.setAttribute('aria-label', 'Need a Mechanic? Chat Now')
   btn.innerHTML =
     '<span style="display:inline-grid;place-items:center;width:28px;height:28px;border-radius:999px;background:#222b32;color:#0adc6a;margin-right:10px">' +

@@ -267,7 +267,11 @@ function question(slot: SlotId, s: ChatState, reask = false): { replies: string[
       }
     case 'tow_detail':
       return {
-        replies: ['**Where should it be towed** — and is there a trailer attached (loaded or empty)?'],
+        replies: [
+          reask
+            ? "I couldn't make out a drop-off from that — **a business plus a town works best** (like 'TA in El Centro'), or just the town."
+            : '**Where should it be towed** — and is there a trailer attached (loaded or empty)?',
+        ],
         widget: { type: 'text', placeholder: 'e.g. TA shop in Amarillo — loaded trailer attached' },
       }
     case 'tire_size': {
@@ -754,6 +758,12 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       if (activeBefore === 'problem' && !s.problem.description) {
         const answer = (e.problem || req.message).trim()
         if (answer.split(/\s+/).length >= 2) s.problem.description = answer
+      }
+      // Same rule for the tow drop-off: the typed answer IS the destination
+      // ("TA in El Centro") — the geocoder resolves business+city later.
+      if (activeBefore === 'tow_detail' && !s.tow.dropoff) {
+        const answer = (e.tow_dropoff || req.message).trim()
+        if (answer.length >= 3) s.tow.dropoff = answer
       }
       // Refusal gate: only explicitly not-offered services get refused, with a
       // redirect to what we CAN do. Unfamiliar repairs are never refused.

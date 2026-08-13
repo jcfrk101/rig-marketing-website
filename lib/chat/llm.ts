@@ -260,6 +260,8 @@ export function mockExtract(msg: string): Extraction {
     location_state: has('texas', 'amarillo', 'dallas', 'tucson') ? (has('tucson') ? 'az' : 'tx') : null,
     customer_name: (msg.match(/(?:my name is|this is|i'?m) ([A-Z][a-z]+)\b/) || [])[1] || null,
     location_query: roadMatch || refMatch ? msg : null,
-    ack: 'Got it.',
+    // Honest ack: 'Got it.' only when something was actually extracted —
+    // otherwise the engine's reask copy does the talking.
+    ack: [service, vehicle_class, fuel, make, model, tireMatch, roadMatch].some(Boolean) ? 'Got it.' : '',
   }
 }

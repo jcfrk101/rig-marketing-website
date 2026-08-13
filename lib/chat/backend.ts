@@ -127,6 +127,7 @@ export function leadPayload(s: ChatState) {
     vehicle_make: s.vehicle.make,
     vehicle_model: s.vehicle.model,
     vehicle_year: s.vehicle.year,
+    vehicle_vin: s.vehicle.vin,
     problem: s.problem.description,
     customer_name: s.name,
     latitude: s.location.lat,

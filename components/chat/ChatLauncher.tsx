@@ -102,7 +102,7 @@ export default function ChatLauncher() {
         <div
           className={`fixed inset-0 z-50 sm:inset-auto sm:bottom-5 sm:right-5 sm:h-[680px] sm:max-h-[calc(100dvh-40px)] sm:w-[400px] sm:overflow-hidden sm:rounded-2xl sm:shadow-2xl sm:shadow-black/50 ${open ? '' : 'hidden'}`}
         >
-          <BreakdownChat onClose={minimize} />
+          <BreakdownChat onClose={minimize} visible={open} />
         </div>
       )}
 

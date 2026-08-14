@@ -35,7 +35,7 @@ function Bold({ text }: { text: string }) {
   )
 }
 
-export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
+export default function BreakdownChat({ onClose, visible = true }: { onClose?: () => void; visible?: boolean }) {
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [widget, setWidget] = useState<Widget | null>(null)
   const [state, setState] = useState<ChatState | null>(null)
@@ -96,6 +96,27 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
 
   const scrollDown = () =>
     requestAnimationFrame(() => streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight, behavior: 'smooth' }))
+
+  // Whenever the chat pops into view (opened, reopened, or restored on a new
+  // page), land on the latest message ready to type — never mid-history.
+  // Focus only on desktop so mobile doesn't get a surprise keyboard. The
+  // slight delay lets a sessionStorage restore finish rendering first.
+  const rootRef = useRef<HTMLDivElement>(null)
+  const landAtLatest = () => {
+    const attempt = (tries: number) => {
+      if (streamRef.current) streamRef.current.scrollTop = streamRef.current.scrollHeight
+      const el = window.matchMedia?.('(min-width: 640px)').matches
+        ? rootRef.current?.querySelector<HTMLElement>('textarea, input:not([type="file"])')
+        : null
+      if (el) el.focus()
+      else if (tries > 0) setTimeout(() => attempt(tries - 1), 200) // hydration may still be rendering
+    }
+    setTimeout(() => attempt(4), 80)
+  }
+  useEffect(() => {
+    if (visible) landAtLatest()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible])
 
   async function turn(payload: { action?: { id: string; value?: string; lat?: number; lng?: number; count?: number; code?: string; index?: number; ctx?: string }; message?: string; photos?: string[] }, isRetry = false) {
     setBusy(true)
@@ -177,6 +198,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
             url: p.url || placeholder,
           }))
         )
+        landAtLatest()
         return // conversation restored — no greeting turn
       }
     } catch {}
@@ -279,7 +301,7 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
   }
 
   return (
-    <div className="flex h-full flex-col bg-rig-navy-deep text-white">
+    <div ref={rootRef} className="flex h-full flex-col bg-rig-navy-deep text-white">
       {/* Header */}
       <header className="relative flex items-center justify-center border-b border-white/10 bg-[#1a2127] px-4 py-3">
         <div className="flex w-full max-w-xl items-center gap-3">

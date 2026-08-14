@@ -1,6 +1,5 @@
 import AnnouncementBar from '@/components/AnnouncementBar'
 import Hero from '@/components/Hero'
-import ChatLauncher from '@/components/chat/ChatLauncher'
 import NetworkCoverage from '@/components/NetworkCoverage'
 import ServiceStats from '@/components/ServiceStats'
 import ExecutionFlow from '@/components/ExecutionFlow'
@@ -19,7 +18,6 @@ export default function Home() {
       <Differentiators />
       <FeatureStatus />
       <CTASection />
-      <ChatLauncher />
     </>
   )
 }

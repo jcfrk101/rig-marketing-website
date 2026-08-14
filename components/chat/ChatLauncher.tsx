@@ -16,6 +16,17 @@ export default function ChatLauncher() {
   const [everOpened, setEverOpened] = useState(false)
   const [teaser, setTeaser] = useState(false)
 
+  // A chat that was open before this navigation reopens with its restored
+  // conversation (BreakdownChat rehydrates from the same sessionStorage).
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('rig-chat-open') === '1' && sessionStorage.getItem('rig-chat-session')) {
+        setOpen(true)
+        setEverOpened(true)
+      }
+    } catch {}
+  }, [])
+
   // Journey tracking: referrer + landing + pages browsed, shared with the
   // directory embed via sessionStorage — logged with any chat that starts.
   useEffect(() => {
@@ -73,6 +84,14 @@ export default function ChatLauncher() {
     // Anyone who has opened the chat doesn't need the nudge again this session.
     try {
       sessionStorage.setItem(TEASER_KEY, '99')
+      sessionStorage.setItem('rig-chat-open', '1')
+    } catch {}
+  }
+
+  function minimize() {
+    setOpen(false)
+    try {
+      sessionStorage.setItem('rig-chat-open', '0')
     } catch {}
   }
 
@@ -83,7 +102,7 @@ export default function ChatLauncher() {
         <div
           className={`fixed inset-0 z-50 sm:inset-auto sm:bottom-5 sm:right-5 sm:h-[680px] sm:max-h-[calc(100dvh-40px)] sm:w-[400px] sm:overflow-hidden sm:rounded-2xl sm:shadow-2xl sm:shadow-black/50 ${open ? '' : 'hidden'}`}
         >
-          <BreakdownChat onClose={() => setOpen(false)} />
+          <BreakdownChat onClose={minimize} />
         </div>
       )}
 

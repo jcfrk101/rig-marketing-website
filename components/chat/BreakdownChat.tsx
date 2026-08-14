@@ -141,9 +141,45 @@ export default function BreakdownChat({ onClose }: { onClose?: () => void }) {
     }
   }
 
+  // Persist the conversation per browser tab so navigating the site (or
+  // between directory pages, which remount the chat iframe) picks up exactly
+  // where the driver left off.
+  useEffect(() => {
+    if (!state) return
+    try {
+      sessionStorage.setItem(
+        'rig-chat-session',
+        JSON.stringify({ state, msgs: msgs.slice(-80), widget, photosOffered })
+      )
+    } catch {}
+  }, [state, msgs, widget, photosOffered])
+
   useEffect(() => {
     if (booted.current) return // StrictMode double-mount guard
     booted.current = true
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('rig-chat-session') || 'null')
+      if (saved?.state) {
+        setState(saved.state)
+        setMsgs(saved.msgs || [])
+        setWidget(saved.widget || null)
+        setPhotosOffered(!!saved.photosOffered)
+        // Thumbnails: GCS urls survive; pre-verification uploads get a
+        // placeholder tile so delete indexes stay aligned with photoItems.
+        const placeholder =
+          'data:image/svg+xml,' +
+          encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><rect width="72" height="72" fill="%23333b42"/><text x="36" y="42" font-size="26" text-anchor="middle">📷</text></svg>'
+          )
+        setPhotos(
+          ((saved.state.photoItems as { url: string | null }[]) || []).map((p, i) => ({
+            name: `photo ${i + 1}`,
+            url: p.url || placeholder,
+          }))
+        )
+        return // conversation restored — no greeting turn
+      }
+    } catch {}
     turn({}) // opening turn
     // Silent geocode bias: only when permission is ALREADY granted — never prompts.
     if (navigator.permissions?.query) {

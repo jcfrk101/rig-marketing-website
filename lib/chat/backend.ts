@@ -162,11 +162,11 @@ export function leadPayload(s: ChatState) {
     tire_size: s.tireSize.value,
     // Structured tire location — drives the mechanic-facing TirePositions
     // grid server-side; the composed tire_position below feeds the notes.
-    tire_axle: s.tirePosition,
-    tire_side: s.tireSide,
-    tire_dual: s.tireDual,
+    tire_axle: s.tirePosition === 'unknown' ? null : s.tirePosition,
+    tire_side: s.tireSide === 'unknown' ? null : s.tireSide,
+    tire_dual: s.tireDual === 'unknown' ? null : s.tireDual,
     tire_position:
-      [s.tirePosition, s.tireSide && `${s.tireSide} side`, s.tireDual && (s.tireDual === 'both' ? 'both duals' : `${s.tireDual} dual`)]
+      [s.tirePosition !== 'unknown' ? s.tirePosition : null, s.tireSide && s.tireSide !== 'unknown' && `${s.tireSide} side`, s.tireDual && s.tireDual !== 'unknown' && (s.tireDual === 'both' ? 'both duals' : `${s.tireDual} dual`)]
         .filter(Boolean)
         .join(', ') || null,
     has_spare: s.tireSpare,

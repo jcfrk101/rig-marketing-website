@@ -60,6 +60,12 @@ const REDIRECT = "No worries — my whole job here is getting you rolling again,
 // extractor sometimes classifies it that way and the redirect reads rude.
 const PLEASANTRY = /^[\s!.,]*((ok(ay)?|k+|thanks?(\s+(you|u))?|ty|thx|great|cool|perfect|sounds good|got it|alright|awesome|nice)[\s!.,]*)+$/i
 
+// A typed refusal ("skip", "no", "don't know", "not sure", "n/a") moves the
+// chat forward: optional slots get marked unknown for the dispatcher, the few
+// truly required ones explain why they can't be skipped. Never a repeat.
+const SKIP_WORDS =
+  /^[\s!.,]*(skip( it| this)?|no|nope|nah|pass|none|n\/?a|not sure|no idea|(i )?(don'?t|do not) know|dunno|unknown|idk|no thanks|not now|later|next|move on|can'?t (see|tell|say)|not applicable)[\s!.,]*$/i
+
 // A bare answer to the name question IS the name — the extractor sometimes
 // fails to recognize uncommon names ("Gerhard") and misroutes them off-topic,
 // and name is asked exactly once, so a miss loses it silently.
@@ -363,7 +369,7 @@ export function summaryData(s: ChatState): Record<string, string> {
     ...(s.service === 'tire'
       ? {
           Tire: [
-            [s.tirePosition, s.tireSide && `${s.tireSide} side`, s.tireDual && (s.tireDual === 'both' ? 'both duals' : `${s.tireDual} dual`)]
+            [s.tirePosition !== 'unknown' ? s.tirePosition : null, s.tireSide && s.tireSide !== 'unknown' && `${s.tireSide} side`, s.tireDual && s.tireDual !== 'unknown' && (s.tireDual === 'both' ? 'both duals' : `${s.tireDual} dual`)]
               .filter(Boolean)
               .join(', ') || null,
             s.tireSpare === true ? 'has spare' : s.tireSpare === false ? 'no spare' : null,
@@ -612,16 +618,16 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
         }
         // Second miss: never wall them off. Offer to carry on unverified —
         // dispatch confirms the number by voice instead.
-        replies.push("Still not matching. **No problem — we can skip the code.** A dispatcher will confirm your number by phone instead.")
+        replies.push(`Still not matching. Is **${formatPhone(s.phone.number)}** the right number? If so, **no problem — we can skip the code** and a dispatcher will confirm by phone instead.`)
         return { replies, widget: otpEscape(s), state: s, photosOffered, userEcho }
       } else if (result.reason === 'expired' || result.reason === 'no_code_sent') {
-        replies.push("That code expired — I can send a fresh one, or we can skip it and a dispatcher confirms your number by phone.")
+        replies.push(`That code expired. Is **${formatPhone(s.phone.number)}** right? I can send a fresh one there, or we can skip it and a dispatcher confirms by phone.`)
         return { replies, widget: otpEscape(s, true), state: s, photosOffered, userEcho }
       } else if (result.reason === 'too_many_attempts') {
-        replies.push("That code's locked out — **let's skip it.** A dispatcher will confirm your number by phone.")
+        replies.push(`That code's locked out — **let's skip it.** Is **${formatPhone(s.phone.number)}** the right number for a dispatcher to call?`)
         return { replies, widget: otpEscape(s), state: s, photosOffered, userEcho }
       } else {
-        replies.push("Something hiccuped verifying that — try the code once more, or skip it:")
+        replies.push(`Something hiccuped verifying that. Is **${formatPhone(s.phone.number)}** right? Try the code once more, or skip it:`)
         return { replies, widget: otpEscape(s, true, true), state: s, photosOffered, userEcho }
       }
     } else if (a.id === 'otp_retry') {
@@ -635,7 +641,7 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
         // Backend refused (or predates this route). Don't strand them: offer a
         // fresh code AND the phone line — never a dead end.
         replies.push(
-          "I couldn't skip it on our side just now. **Try a fresh code**, or **call 1 (855) 744-2223** — that line answers 24/7 and can take it from here."
+          `I couldn't skip it on our side just now. Is **${formatPhone(s.phone.number)}** right? **Try a fresh code** there, or **call 1 (855) 744-2223** — that line answers 24/7 and can take it from here.`
         )
         return {
           replies,
@@ -791,6 +797,15 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
     } else {
       replies.push('Understood — the dispatcher will confirm when they call.')
     }
+  } else if (req.message && activeBefore === 'tire_spare' && /^[\s!.,]*(no|nope|nah|none|yes|yeah|yep|yup)[\s!.,]*$/i.test(req.message)) {
+    // A bare yes/no at the spare question is the answer, not a skip.
+    userEcho = req.message
+    s.tireSpare = /^[\s!.,]*(yes|yeah|yep|yup)/i.test(req.message)
+  } else if (req.message && SKIP_WORDS.test(req.message) && activeBefore) {
+    userEcho = req.message
+    const skipped = skipSlot(s, activeBefore)
+    if (skipped) replies.push(skipped)
+    else replies.push(REQUIRED_SLOT_COPY[activeBefore] ?? "That one I do need — it's what dispatch works from.")
   } else if (req.message && s.awaitingPhotoNote) {
     userEcho = req.message
     s.photoNotes = s.photoNotes ? `${s.photoNotes}; ${req.message}` : req.message
@@ -893,13 +908,67 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
   return { replies, widget: q.widget, state: s, photosOffered, userEcho }
 }
 
+// Slots a driver can wave off. Each returns the honest handoff line and
+// nudges state so nextSlot() advances; the dispatcher sees the gap via flags
+// or notes. Required slots (service, vehicle class, problem, phone) return
+// null and the caller explains why.
+function skipSlot(s: ChatState, slot: SlotId): string | null {
+  switch (slot) {
+    case 'location':
+      // nextSlot re-asks while tier is 'missing'; mark it weak-with-text so
+      // the flag fires (LOCATION_UNRESOLVED) but the question moves on.
+      s.location.attempts = MAX_ATTEMPTS
+      s.location.tier = 'weak'
+      if (!s.location.text) s.location.text = '(driver skipped — confirm by phone)'
+      return "No problem — the dispatcher will pin down your exact spot when they call. Let's keep going."
+    case 'vehicle_detail':
+      s.vehicle.attempts = MAX_ATTEMPTS
+      return "That's fine — the mechanic can confirm make and model on arrival."
+    case 'tire_size':
+      s.tireSize.attempts = MAX_ATTEMPTS
+      return "We'll let the mechanic confirm the size on arrival."
+    case 'tire_position':
+      s.tirePosition = 'unknown'
+      s.tireSide = 'unknown'
+      s.tireDual = 'unknown'
+      return "Okay — the mechanic will find it on arrival."
+    case 'tire_side':
+      s.tireSide = 'unknown'
+      return 'Okay.'
+    case 'tire_dual':
+      s.tireDual = 'unknown'
+      return 'Okay.'
+    case 'tire_spare':
+      s.tireSpare = false // safest assumption: bring a tire
+      return "No worries — we'll assume no spare so the tech brings one."
+    case 'tow_detail':
+      s.tow.attempts = 2
+      return 'Okay — the dispatcher will sort out the drop-off with you by phone.'
+    case 'photos':
+      return null // handled by the widget's own skip button; falls through
+    case 'name':
+      s.nameAsked = true
+      return 'No problem.'
+    default:
+      return null
+  }
+}
+
+const REQUIRED_SLOT_COPY: Partial<Record<SlotId, string>> = {
+  service: "I do need to know which kind of help — **tire, tow, or a mechanic?** Tap one above.",
+  vehicle_class: "I do need the type of vehicle — it decides who we send. **Tap one above.**",
+  fuel: "Just diesel or gas — it decides who we can send. **Tap one above.**",
+  problem: "I need at least a few words on what happened — it's what the mechanic works from. Even **'won't start'** is enough.",
+  phone: "The number's the one thing I can't skip — it's how offers reach you. **Any number a dispatcher can call works.**",
+}
+
 // The escape hatch from the OTP wall. Never dead-ends a driver on a code.
 function otpEscape(s: ChatState, offerResend = false, offerRetry = false): Widget {
   const options: { id: string; label: string }[] = []
   if (offerRetry) options.push({ id: 'otp_retry', label: 'Try the code again' })
   if (offerResend) options.push({ id: 'otp_resend', label: 'Send a new code' })
   options.push({ id: 'otp_skip', label: '✓ Skip the code — continue' })
-  options.push({ id: 'phone_change', label: 'I typed the wrong number' })
+  options.push({ id: 'phone_change', label: "That's the wrong number — fix it" })
   return { type: 'chips', options }
 }
 

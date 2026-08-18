@@ -241,6 +241,7 @@ export const footer = {
     {
       title: 'Company',
       links: [
+        { label: 'Recent work (feed)', href: '/feed' },
         { label: 'Book a demo', href: links.demo },
         { label: 'Contact', href: links.contactEmail },
         { label: `Call ${links.phoneDisplay}`, href: links.phoneTel },

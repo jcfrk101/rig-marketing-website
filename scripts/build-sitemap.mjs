@@ -30,6 +30,7 @@ const ownUrls = [
   { loc: `${ORIGIN}/products/`, priority: '0.9' },
   { loc: `${ORIGIN}/owner-operators/`, priority: '0.9' },
   { loc: `${ORIGIN}/shops/`, priority: '0.9' },
+  { loc: `${ORIGIN}/feed/`, priority: '0.7' },
 ]
 
 const marketingXml =

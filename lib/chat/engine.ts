@@ -14,7 +14,7 @@ import {
 } from './slots'
 import { Extraction, analyzePhotos, extract } from './llm'
 import { resolveLocation, reverseGeocode } from './geo'
-import { addPhoto, checkOtp, removePhoto, sendOtp, submitLead } from './backend'
+import { addPhoto, checkOtp, removePhoto, sendOtp, skipOtp, submitLead } from './backend'
 import { decodeVin } from './vin'
 
 export type Widget =
@@ -602,28 +602,79 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       const result = await checkOtp(s.conversationId, s.phone.number || '', a.code || '', s.name)
       if (result.verified) {
         s.phone.verified = true
+        s.phone.smsConfirmed = true
         replies.push("✓ Verified. You're all set.")
       } else if (result.reason === 'wrong_code') {
-        replies.push("That code doesn't match — give it another look and try again:")
-        return { replies, widget: { type: 'otp' }, state: s, photosOffered, userEcho }
+        s.phone.wrongCodes += 1
+        if (s.phone.wrongCodes < 2) {
+          replies.push("That code doesn't match — give it another look and try again:")
+          return { replies, widget: { type: 'otp' }, state: s, photosOffered, userEcho }
+        }
+        // Second miss: never wall them off. Offer to carry on unverified —
+        // dispatch confirms the number by voice instead.
+        replies.push("Still not matching. **No problem — we can skip the code.** A dispatcher will confirm your number by phone instead.")
+        return { replies, widget: otpEscape(s), state: s, photosOffered, userEcho }
       } else if (result.reason === 'expired' || result.reason === 'no_code_sent') {
-        replies.push('That code expired.')
+        replies.push("That code expired — I can send a fresh one, or we can skip it and a dispatcher confirms your number by phone.")
+        return { replies, widget: otpEscape(s, true), state: s, photosOffered, userEcho }
+      } else if (result.reason === 'too_many_attempts') {
+        replies.push("That code's locked out — **let's skip it.** A dispatcher will confirm your number by phone.")
+        return { replies, widget: otpEscape(s), state: s, photosOffered, userEcho }
+      } else {
+        replies.push("Something hiccuped verifying that — try the code once more, or skip it:")
+        return { replies, widget: otpEscape(s, true, true), state: s, photosOffered, userEcho }
+      }
+    } else if (a.id === 'otp_retry') {
+      replies.push('Enter the code here:')
+      return { replies, widget: { type: 'otp' }, state: s, photosOffered, userEcho }
+    } else if (a.id === 'otp_skip') {
+      // Continue unverified against the number on file. Also asks for a
+      // second number when the first may not take texts (landline).
+      const accepted = await skipOtp(s.conversationId, s.phone.number || '', s.name)
+      if (!accepted.accepted) {
+        // Backend refused (or predates this route). Don't strand them: offer a
+        // fresh code AND the phone line — never a dead end.
+        replies.push(
+          "I couldn't skip it on our side just now. **Try a fresh code**, or **call 1 (855) 744-2223** — that line answers 24/7 and can take it from here."
+        )
         return {
           replies,
-          widget: { type: 'chips', options: [{ id: 'otp_resend', label: 'Send a new code' }] },
+          widget: {
+            type: 'chips',
+            options: [
+              { id: 'otp_resend', label: 'Send a new code' },
+              { id: 'phone_change', label: 'I typed the wrong number' },
+            ],
+          },
           state: s,
           photosOffered,
           userEcho,
         }
-      } else if (result.reason === 'too_many_attempts') {
-        replies.push(
-          "Too many tries on that code. **Call us — 1 (855) 744-2223** and a dispatcher takes it from here."
-        )
-        return { replies, widget: { type: 'declined' }, state: s, photosOffered, userEcho }
-      } else {
-        replies.push("Something hiccuped verifying that — try the code once more:")
-        return { replies, widget: { type: 'otp' }, state: s, photosOffered, userEcho }
       }
+      s.phone.verified = true // structurally: user + lead exist; smsConfirmed stays false
+      s.phone.awaitingAlt = true
+      replies.push(
+        `Got it — we'll use **${formatPhone(s.phone.number)}**. If that's a landline or might be wrong, **type a second number we can reach you at** — or tap below if it's right.`
+      )
+      return {
+        replies,
+        // chips widgets carry a typing box, so a second number can be typed
+        // straight in while the confirm stays one tap.
+        widget: { type: 'chips', options: [{ id: 'alt_phone_none', label: "✓ That's my number" }] },
+        state: s,
+        photosOffered,
+        userEcho,
+      }
+    } else if (a.id === 'alt_phone_none') {
+      s.phone.awaitingAlt = false
+      replies.push('Understood — the dispatcher will confirm when they call.')
+    } else if (a.id === 'phone_change') {
+      // Driver wants to fix the number and try the code again from the top.
+      s.phone.number = null
+      s.phone.otpSent = false
+      s.phone.wrongCodes = 0
+      replies.push("No problem — what's the right number?")
+      return { replies, widget: { type: 'phone' }, state: s, photosOffered, userEcho }
     } else if (a.id === 'submit') {
       const result = await submitLead(s)
       if (!result.submitted) {
@@ -642,7 +693,9 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       s.flags = computeFlags(s)
       replies.push('🚀 **Sent.** A dispatcher is reviewing it now, and nearby mechanics are being notified.')
       replies.push(
-        `You'll get a **text at ${s.phone.number}** with a live link the moment offers come in — usually within minutes. You can close this window; everything continues by text.`
+        s.phone.smsConfirmed
+          ? `You'll get a **text at ${formatPhone(s.phone.number)}** with a live link the moment offers come in — usually within minutes. You can close this window; everything continues by text.`
+          : `A dispatcher will **call ${formatPhone(s.phone.number)}**${s.phone.altPhone ? ` (or ${formatPhone(s.phone.altPhone)})` : ''} to confirm and get you offers — usually within minutes. Keep your phone handy.`
       )
       return { replies, widget: { type: 'done' }, state: s, photosOffered, userEcho }
     }
@@ -726,6 +779,18 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       .split(' ')
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(' ')
+  } else if (req.message && s.phone.awaitingAlt) {
+    // Second number after the unverified skip. Digits win; anything else
+    // ("no", "that's it") means keep the number on file.
+    userEcho = req.message
+    const digits = req.message.replace(/\D/g, '')
+    s.phone.awaitingAlt = false
+    if (digits.length === 10 || (digits.length === 11 && digits.startsWith('1'))) {
+      s.phone.altPhone = digits.length === 10 ? '1' + digits : digits
+      replies.push(`Added **${formatPhone(s.phone.altPhone)}** as a second number — the dispatcher will try both.`)
+    } else {
+      replies.push('Understood — the dispatcher will confirm when they call.')
+    }
   } else if (req.message && s.awaitingPhotoNote) {
     userEcho = req.message
     s.photoNotes = s.photoNotes ? `${s.photoNotes}; ${req.message}` : req.message
@@ -826,6 +891,23 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
   // Avoid repeating the identical question when a meta/off-topic answer was given:
   replies.push(...q.replies)
   return { replies, widget: q.widget, state: s, photosOffered, userEcho }
+}
+
+// The escape hatch from the OTP wall. Never dead-ends a driver on a code.
+function otpEscape(s: ChatState, offerResend = false, offerRetry = false): Widget {
+  const options: { id: string; label: string }[] = []
+  if (offerRetry) options.push({ id: 'otp_retry', label: 'Try the code again' })
+  if (offerResend) options.push({ id: 'otp_resend', label: 'Send a new code' })
+  options.push({ id: 'otp_skip', label: '✓ Skip the code — continue' })
+  options.push({ id: 'phone_change', label: 'I typed the wrong number' })
+  return { type: 'chips', options }
+}
+
+function formatPhone(n: string | null): string {
+  if (!n) return ''
+  const d = n.replace(/\D/g, '')
+  const t = d.length === 11 && d.startsWith('1') ? d.slice(1) : d
+  return t.length === 10 ? `(${t.slice(0, 3)}) ${t.slice(3, 6)}-${t.slice(6)}` : n
 }
 
 function contextLine(s: ChatState, currentQuestion?: string): string {

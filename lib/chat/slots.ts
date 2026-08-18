@@ -57,7 +57,11 @@ export interface ChatState {
   photoSummary: string | null
   photoNotes: string | null
   awaitingPhotoNote: boolean
-  phone: { number: string | null; verified: boolean; otpSent: boolean }
+  // verified = user + partial lead exist server-side (either OTP success or the
+  // unverified escape path). smsConfirmed = the code actually matched.
+  // wrongCodes drives the escape-hatch offer; altPhone is a second number the
+  // driver offered when the first couldn't take a text (landline, etc.).
+  phone: { number: string | null; verified: boolean; otpSent: boolean; smsConfirmed: boolean; wrongCodes: number; altPhone: string | null; awaitingAlt: boolean }
   flags: string[]
   submitted: boolean
   // Where the driver came from (referrer, landing page, pages browsed) —
@@ -107,7 +111,7 @@ export function initialState(): ChatState {
     photoSummary: null,
     photoNotes: null,
     awaitingPhotoNote: false,
-    phone: { number: null, verified: false, otpSent: false },
+    phone: { number: null, verified: false, otpSent: false, smsConfirmed: false, wrongCodes: 0, altPhone: null, awaitingAlt: false },
     flags: [],
     submitted: false,
     journey: null,
@@ -240,6 +244,7 @@ export function computeFlags(s: ChatState): string[] {
     flags.push('TIRE_SIZE_UNKNOWN')
   if (s.service === 'tow' && !s.tow.dropoff) flags.push('TOW_DROPOFF_UNKNOWN')
   if (s.wantsWinch) flags.push('WINCH')
+  if (s.phone.verified && !s.phone.smsConfirmed) flags.push('PHONE_UNVERIFIED')
   if (s.service === 'service' && s.trailerWork !== true && vehicleTier(s) !== 'gold' && vehicleTier(s) !== 'good')
     flags.push('VEHICLE_DETAIL_WEAK')
   if (s.trailerWork === true) flags.push('TRAILER_WORK')

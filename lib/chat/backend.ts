@@ -57,6 +57,26 @@ export async function checkOtp(
   }
 }
 
+// Escape hatch from the OTP wall: provisions the lead against the number the
+// driver confirmed, flagged unverified for dispatch to confirm by voice.
+export async function skipOtp(
+  conversationId: string,
+  phone: string,
+  firstName: string | null
+): Promise<{ accepted: boolean; reason: string | null }> {
+  if (!backendEnabled()) return { accepted: true, reason: null } // mock
+  try {
+    const out = await post<{ accepted: boolean; reason: string | null; request_id: string | null }>(
+      '/chat/otp/skip',
+      { conversation_id: conversationId, phone, first_name: firstName }
+    )
+    return out ?? { accepted: false, reason: 'error' }
+  } catch (err) {
+    console.error('otp skip failed', err)
+    return { accepted: false, reason: 'error' }
+  }
+}
+
 export async function addPhoto(conversationId: string, dataUrl: string): Promise<string | null> {
   if (!backendEnabled()) return null
   const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
@@ -130,6 +150,8 @@ export function leadPayload(s: ChatState) {
     vehicle_vin: s.vehicle.vin,
     fuel: s.fuel,
     drivable: s.problem.drivable,
+    phone_verified: s.phone.smsConfirmed,
+    alt_phone: s.phone.altPhone,
     problem: s.problem.description,
     customer_name: s.name,
     latitude: s.location.lat,

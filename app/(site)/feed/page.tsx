@@ -67,7 +67,7 @@ export default async function FeedPage({ searchParams }: { searchParams: { state
             {completed.length === 0 ? (
               <p className="mt-3 text-sm text-rig-navy/60">
                 Completed-job posts appear here after a RIG dispatcher reviews the write-up and photos. Check
-                back soon — the network is busy (see the live requests →).
+                back soon.
               </p>
             ) : (
               <div className="mt-4 grid gap-5 sm:grid-cols-2">
@@ -78,8 +78,8 @@ export default async function FeedPage({ searchParams }: { searchParams: { state
             )}
           </div>
           <aside>
-            <h2 className="text-lg font-semibold text-rig-navy">Live requests</h2>
-            <p className="mt-1 text-xs text-rig-navy/55">Drivers who just asked for help — mechanics are bidding now.</p>
+            <h2 className="text-lg font-semibold text-rig-navy">Recent requests</h2>
+            <p className="mt-1 text-xs text-rig-navy/55">Where drivers asked for help most recently.</p>
             {requested.length === 0 ? (
               <p className="mt-3 text-sm text-rig-navy/60">Quiet right now.</p>
             ) : (

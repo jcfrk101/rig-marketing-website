@@ -93,6 +93,8 @@ const META: Record<string, string> = {
   meta_coverage: 'Yes — **we have mechanics wherever you need them**, nationwide.',
   meta_payment:
     'We take **EFS Payments**, WEX Express Codes, T-Chek, and credit cards — payment settles through Rig only after the work is done.',
+  meta_join:
+    "Good to hear from you! 🔧 Mechanics on the Rig network browse nearby jobs and send offers straight from the app — no marketing spend. **Head to shop.bigrig.app to learn more and sign up.** (This chat is just for drivers who need help right now.)",
   meta_insurance:
     "We don't bill insurance or warranties directly, but we can send you an itemized invoice to submit for reimbursement.",
 }

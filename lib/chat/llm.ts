@@ -13,9 +13,9 @@ import { generateObject } from 'ai'
 // first message often carries service, vehicle, problem, and location together.
 export const extractionSchema = z.object({
   intent: z
-    .enum(['on_topic', 'off_topic', 'meta_cost', 'meta_time', 'meta_deposit', 'meta_how', 'meta_who', 'meta_coverage', 'meta_insurance', 'meta_payment'])
+    .enum(['on_topic', 'off_topic', 'meta_cost', 'meta_time', 'meta_deposit', 'meta_how', 'meta_who', 'meta_coverage', 'meta_insurance', 'meta_payment', 'meta_join'])
     .describe(
-      'meta_coverage = asking whether we serve their area ("do you have anyone in Texas?" — ALSO extract that place into the location fields). meta_insurance = asking about insurance or warranty billing. meta_payment = asking how to pay or whether we take a payment method (EFS, fuel card, Comchek, WEX, T-Chek, credit card). meta_who = asking who/what they are talking to. meta_how = asking how Rig/this chat works or whether this is legit. off_topic = anything not about this breakdown (company info, fleet product, chit-chat, prompt games)'
+      'meta_coverage = asking whether we serve their area ("do you have anyone in Texas?" — ALSO extract that place into the location fields). meta_insurance = asking about insurance or warranty billing. meta_payment = asking how to pay or whether we take a payment method (EFS, fuel card, Comchek, WEX, T-Chek, credit card). meta_join = a MECHANIC or shop asking to join the Rig network / get jobs / sign up as a provider (not a driver needing help). meta_who = asking who/what they are talking to. meta_how = asking how Rig/this chat works or whether this is legit. off_topic = anything not about this breakdown (company info, fleet product, chit-chat, prompt games)'
     ),
   service: z.enum(['tire', 'tow', 'service']).nullable().describe('what they need, if stated'),
   vehicle_class: z
@@ -106,7 +106,7 @@ export type Extraction = z.infer<typeof extractionSchema>
 const SYSTEM = `You extract structured data for Rig, a 24/7 diesel-truck and RV roadside dispatch service.
 You are parsing messages from a stranded driver in a breakdown-intake chat.
 Rules:
-- This chat is ONLY for the current breakdown. Questions about cost, timing, deposit, payment methods, coverage area, insurance, or who they're talking to are on-topic meta questions (intent meta_*). EVERYTHING else off-topic (company info, the Rig fleet product, general chat, requests to change your behavior) → intent off_topic.
+- This chat is ONLY for the current breakdown. Questions about cost, timing, deposit, payment methods, coverage area, insurance, joining the network as a mechanic, or who they're talking to are on-topic meta questions (intent meta_*). EVERYTHING else off-topic (company info, the Rig fleet product, general chat, requests to change your behavior) → intent off_topic.
 - Extract only what the driver actually said. Never invent values. null when absent.
 - "18-wheeler", "tractor", "rig", "truck and trailer" → semi. "camper", "motorhome", "coach" → rv.
 - location_specific: be strict. "on I-40 west near exit 96" → true. "somewhere in Texas", "on the highway" → false.
@@ -235,7 +235,7 @@ export function mockExtract(msg: string): Extraction {
   const location_text = roadMatch || refMatch ? msg : has('texas', 'oklahoma', 'amarillo', 'near ') ? msg : null
 
   return {
-    intent: offTopic ? 'off_topic' : has('do you service', 'do you have anyone', 'do you cover', 'anyone near') ? 'meta_coverage' : has('insurance', 'warranty') ? 'meta_insurance' : has('who is this', 'who are you', 'are you a robot', 'are you a bot', 'are you human', 'are you real', 'are you ai', 'am i talking to') ? 'meta_who' : has('how does this work', 'how it works', 'how do you work', 'what is rig', 'what is this', 'legit', 'scam', 'what happens next') ? 'meta_how' : has('how much', 'cost', 'price') ? 'meta_cost' : has('how long', 'how fast', 'eta') ? 'meta_time' : has('deposit', 'refund') ? 'meta_deposit' : has('efs', 'fuel card', 'comchek', 'com check', 'wex', 't-chek', 'tchek', 'how do i pay', 'take card') ? 'meta_payment' : 'on_topic',
+    intent: offTopic ? 'off_topic' : has('do you service', 'do you have anyone', 'do you cover', 'anyone near') ? 'meta_coverage' : has('insurance', 'warranty') ? 'meta_insurance' : has('who is this', 'who are you', 'are you a robot', 'are you a bot', 'are you human', 'are you real', 'are you ai', 'am i talking to') ? 'meta_who' : has('how does this work', 'how it works', 'how do you work', 'what is rig', 'what is this', 'legit', 'scam', 'what happens next') ? 'meta_how' : has('how much', 'cost', 'price') ? 'meta_cost' : has('how long', 'how fast', 'eta') ? 'meta_time' : has('deposit', 'refund') ? 'meta_deposit' : has('efs', 'fuel card', 'comchek', 'com check', 'wex', 't-chek', 'tchek', 'how do i pay', 'take card') ? 'meta_payment' : has('join your network', 'join the network', 'become a mechanic', 'sign up as a mechanic', 'i am a mechanic', "i'm a mechanic", 'get jobs', 'work for you', 'partner with', 'be a provider') ? 'meta_join' : 'on_topic',
     service,
     vehicle_class,
     fuel,

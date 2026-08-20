@@ -25,12 +25,32 @@ interface Msg {
   text: string
 }
 
-// Minimal markdown: **bold** only (engine templates use it).
+// Minimal markdown: **bold**, plus auto-linked bigrig.app domains (the only
+// links engine copy ever points at — join page, directory).
+function linkify(text: string, keyBase: string) {
+  const parts = text.split(/((?:https?:\/\/)?[a-z0-9-]+\.bigrig\.app(?:\/[\w\-./?=&%]*)?)/gi)
+  return parts.map((p, i) =>
+    /bigrig\.app/i.test(p) ? (
+      <a
+        key={`${keyBase}-${i}`}
+        href={p.startsWith('http') ? p : `https://${p}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline decoration-rig-green underline-offset-2"
+      >
+        {p}
+      </a>
+    ) : (
+      <span key={`${keyBase}-${i}`}>{p}</span>
+    )
+  )
+}
+
 function Bold({ text }: { text: string }) {
   const parts = text.split(/\*\*(.+?)\*\*/g)
   return (
     <>
-      {parts.map((p, i) => (i % 2 === 1 ? <b key={i}>{p}</b> : <span key={i}>{p}</span>))}
+      {parts.map((p, i) => (i % 2 === 1 ? <b key={i}>{linkify(p, `b${i}`)}</b> : <span key={i}>{linkify(p, `s${i}`)}</span>))}
     </>
   )
 }

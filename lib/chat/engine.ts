@@ -69,7 +69,11 @@ const SKIP_WORDS =
 // A bare answer to the name question IS the name — the extractor sometimes
 // fails to recognize uncommon names ("Gerhard") and misroutes them off-topic,
 // and name is asked exactly once, so a miss loses it silently.
-const NAME_STOPLIST = new Set(['no', 'nope', 'skip', 'yes', 'yeah', 'why', 'na', 'none', 'nothing'])
+const NAME_STOPLIST = new Set([
+  'no', 'nope', 'skip', 'yes', 'yeah', 'why', 'na', 'none', 'nothing',
+  'wait', 'cancel', 'stop', 'help', 'hello', 'hi', 'hey', 'sure', 'what', 'huh',
+  'send', 'done', 'go', 'update',
+])
 function looksLikeName(msg: string): boolean {
   const m = msg.trim()
   return (
@@ -778,8 +782,11 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       "Anytime — you're all set. **Offers land by text** in the next few minutes, and this window can close whenever."
     )
     return { replies, widget: { type: 'done' }, state: s, photosOffered, userEcho }
-  } else if (req.message && activeBefore === 'name' && !s.name && looksLikeName(req.message)) {
+  } else if (req.message && s.nameAsked && !s.name && !PLEASANTRY.test(req.message) && looksLikeName(req.message)) {
     // Name-shaped answer to the name question: bind it directly, no LLM.
+    // Gate on nameAsked/!name rather than activeBefore — asking the question
+    // already set nameAsked, so nextSlot has moved past 'name' by the time
+    // the answer arrives ("Jason" was misrouted off-topic and lost).
     userEcho = req.message
     s.name = req.message
       .trim()
@@ -805,9 +812,12 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
     s.tireSpare = /^[\s!.,]*(yes|yeah|yep|yup)/i.test(req.message)
   } else if (req.message && SKIP_WORDS.test(req.message) && activeBefore) {
     userEcho = req.message
-    const skipped = skipSlot(s, activeBefore)
+    // Same nameAsked wrinkle as the binder above: a "skip" answering the name
+    // question arrives with activeBefore already at 'summary'.
+    const slot = s.nameAsked && !s.name && activeBefore === 'summary' ? 'name' : activeBefore
+    const skipped = skipSlot(s, slot)
     if (skipped) replies.push(skipped)
-    else replies.push(REQUIRED_SLOT_COPY[activeBefore] ?? "That one I do need — it's what dispatch works from.")
+    else replies.push(REQUIRED_SLOT_COPY[slot] ?? "That one I do need — it's what dispatch works from.")
   } else if (req.message && s.awaitingPhotoNote) {
     userEcho = req.message
     s.photoNotes = s.photoNotes ? `${s.photoNotes}; ${req.message}` : req.message

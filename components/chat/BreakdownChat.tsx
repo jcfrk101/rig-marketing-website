@@ -28,7 +28,7 @@ interface Msg {
 // Minimal markdown: **bold**, plus auto-linked bigrig.app domains (the only
 // links engine copy ever points at — join page, directory).
 function linkify(text: string, keyBase: string) {
-  const parts = text.split(/((?:https?:\/\/)?[a-z0-9-]+\.bigrig\.app(?:\/[\w\-./?=&%]*)?)/gi)
+  const parts = text.split(/((?:https?:\/\/)?(?:[a-z0-9-]+\.)?bigrig\.app(?:\/[\w\-./?=&%]*)?)/gi)
   return parts.map((p, i) =>
     /bigrig\.app/i.test(p) ? (
       <a

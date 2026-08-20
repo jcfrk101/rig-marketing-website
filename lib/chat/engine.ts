@@ -52,10 +52,12 @@ export interface TurnResponse {
   userEcho?: string
 }
 
-// Scope-lock nudge for genuinely off-topic messages. Flow-preserving: the
+// Fallback for messages the extractor couldn't place. That's sometimes a
+// genuinely off-topic message and sometimes OUR misread of a real answer, so
+// own the miss — never lecture about staying on topic. Flow-preserving: the
 // current question re-renders right below it — never a send-away (drivers
 // are already on bigrig.app, and "go elsewhere" reads as a brush-off).
-const REDIRECT = "No worries — my whole job here is getting you rolling again, so let's stick to that."
+const REDIRECT = "Sorry — I didn't quite catch that. I'm a simple bot with one job: getting help to you fast. 🙂"
 // Pure politeness ("ok", "thanks") must never hit the off-topic path — the
 // extractor sometimes classifies it that way and the redirect reads rude.
 const PLEASANTRY = /^[\s!.,]*((ok(ay)?|k+|thanks?(\s+(you|u))?|ty|thx|great|cool|perfect|sounds good|got it|alright|awesome|nice)[\s!.,]*)+$/i

@@ -33,7 +33,7 @@ export function RequestedRow({ item }: { item: FeedItem }) {
     <li className="flex items-center gap-3 py-2.5 text-sm">
       <span className="h-2 w-2 shrink-0 rounded-full bg-rig-green" aria-hidden />
       <span className="text-rig-navy/85">
-        <span className="font-medium text-rig-navy">{serviceLabel(item.service_type)}</span>
+        <span className="font-medium text-rig-navy">{item.description || serviceLabel(item.service_type)}</span>
         {place ? ` · ${place}` : ''}
       </span>
       <span className="ml-auto shrink-0 text-xs text-rig-navy/50">{timeAgo(item.event_at_epoch)}</span>

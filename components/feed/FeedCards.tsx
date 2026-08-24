@@ -27,6 +27,34 @@ export function CompletedCard({ item }: { item: FeedItem }) {
   )
 }
 
+// Compact horizontal card (shop-app style): square thumbnail left, details
+// right. Denser than CompletedCard — the format under test for city/corridor
+// pages where many jobs stack in one column.
+export function CompletedRow({ item }: { item: FeedItem }) {
+  const photo = item.photo_urls?.[0]
+  const place = placeOf(item)
+  return (
+    <article className="flex gap-4 rounded-2xl border border-rig-navy/10 bg-white p-3 shadow-sm">
+      {photo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={photo} alt="" className="h-24 w-24 shrink-0 rounded-xl object-cover" loading="lazy" />
+      ) : (
+        <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl bg-rig-navy/5 text-2xl" aria-hidden>
+          🔧
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 text-xs">
+          <span className="rounded-full bg-rig-green/15 px-2 py-0.5 font-semibold text-rig-green-dark">✓ {serviceLabel(item.service_type)}</span>
+          <span className="ml-auto shrink-0 text-rig-navy/50">{timeAgo(item.event_at_epoch)}</span>
+        </div>
+        <h3 className="mt-1 truncate text-sm font-semibold text-rig-navy">{[item.vehicle, place].filter(Boolean).join(' · ') || place || 'Job'}</h3>
+        {item.description && <p className="mt-0.5 line-clamp-2 text-sm leading-snug text-rig-navy/70">{item.description}</p>}
+      </div>
+    </article>
+  )
+}
+
 export function RequestedRow({ item }: { item: FeedItem }) {
   const place = placeOf(item)
   return (

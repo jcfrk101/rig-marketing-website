@@ -51,10 +51,16 @@ export default async function FeedPage({ searchParams }: { searchParams: Params 
   const card = searchParams.card === 'row' ? 'row' : 'grid'
   const here: Params = { state: state || undefined, city: city || undefined, view, card }
 
-  const [stateItems, all] = await Promise.all([
-    fetchFeed({ state: state || undefined, limit: 80 }),
-    fetchFeed({ limit: 200 }),
+  // Completed posts and request rows are fetched separately: requests
+  // outnumber completed jobs ~20:1, so one date-sorted list buries every
+  // completed card. The client-side type filters stay as a belt while an
+  // older API (which ignores type=) is still deployed.
+  const [completedItems, requestedItems, all] = await Promise.all([
+    fetchFeed({ state: state || undefined, type: 'JOB_COMPLETED', limit: 60 }),
+    fetchFeed({ state: state || undefined, type: 'JOB_REQUESTED', limit: 80 }),
+    fetchFeed({ limit: 100 }),
   ])
+  const stateItems = [...completedItems, ...requestedItems]
   const items = city ? stateItems.filter((i) => normCity(i.city) === city) : stateItems
   const completed = items.filter((i) => i.type === 'JOB_COMPLETED')
   const requested = items

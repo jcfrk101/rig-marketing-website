@@ -15,10 +15,13 @@ export interface FeedItem {
 
 const API = process.env.RIG_API_URL || 'https://api.bigrig.app'
 
-export async function fetchFeed(opts: { state?: string; service?: string; limit?: number } = {}): Promise<FeedItem[]> {
+export async function fetchFeed(
+  opts: { state?: string; service?: string; type?: FeedItem['type']; limit?: number } = {},
+): Promise<FeedItem[]> {
   const params = new URLSearchParams()
   if (opts.state) params.set('state', opts.state)
   if (opts.service) params.set('service', opts.service)
+  if (opts.type) params.set('type', opts.type)
   params.set('limit', String(opts.limit ?? 60))
   try {
     const res = await fetch(`${API}/feed/public?${params}`, { next: { revalidate: 300 } })

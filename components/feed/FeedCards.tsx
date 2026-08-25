@@ -1,5 +1,16 @@
 import { FeedItem, placeOf, serviceLabel, timeAgo } from '@/lib/feed'
 
+// Descriptive, factual alt text from the job's own data — these are real
+// dispatcher-approved job photos, and "mobile repair on a 2020 Kenworth T680
+// in Peoria, IL" is exactly the image-search query they should rank for.
+export function photoAlt(i: FeedItem): string {
+  const parts = [serviceLabel(i.service_type)]
+  if (i.vehicle) parts.push(`on a ${i.vehicle}`)
+  const place = placeOf(i)
+  if (place) parts.push(`in ${place}`)
+  return `${parts.join(' ')} — completed mobile repair job photo (RIG)`
+}
+
 // Public feed cards. Completed jobs get the full card (photo, write-up);
 // requested jobs render as compact activity rows so a day with no
 // completed posts yet still reads as a live network. Server components —
@@ -12,7 +23,7 @@ export function CompletedCard({ item }: { item: FeedItem }) {
     <article className="flex flex-col overflow-hidden rounded-2xl border border-rig-navy/10 bg-white shadow-sm">
       {photo && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={photo} alt="" className="h-52 w-full object-cover" loading="lazy" />
+        <img src={photo} alt={photoAlt(item)} className="h-52 w-full object-cover" loading="lazy" />
       )}
       <div className="flex flex-1 flex-col gap-2 p-5">
         <div className="flex items-center gap-2 text-xs">
@@ -37,7 +48,7 @@ export function CompletedRow({ item }: { item: FeedItem }) {
     <article className="flex gap-4 rounded-2xl border border-rig-navy/10 bg-white p-3 shadow-sm">
       {photo ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={photo} alt="" className="h-24 w-24 shrink-0 rounded-xl object-cover" loading="lazy" />
+        <img src={photo} alt={photoAlt(item)} className="h-24 w-24 shrink-0 rounded-xl object-cover" loading="lazy" />
       ) : (
         <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl bg-rig-navy/5 text-2xl" aria-hidden>
           🔧

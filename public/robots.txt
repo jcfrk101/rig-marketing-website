@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://bigrig.app/sitemap.xml
+Sitemap: https://bigrig.app/feed-images-sitemap.xml

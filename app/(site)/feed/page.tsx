@@ -143,7 +143,7 @@ export default async function FeedPage({ searchParams }: { searchParams: Params 
           <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-white/10 pt-4">
             <span className="text-xs text-white/50">View:</span>
             <Link href={hrefFor({ ...here, view: 'all' })} className={chipClass(view === 'all')}>Combined</Link>
-            <Link href={hrefFor({ ...here, view: 'completed' })} className={chipClass(view === 'completed')}>Completed only</Link>
+            <Link href={hrefFor({ ...here, view: 'completed' })} className={chipClass(view === 'completed')}>Highlights</Link>
             <Link href={hrefFor({ ...here, view: 'dispatch' })} className={chipClass(view === 'dispatch')}>Dispatch only</Link>
             {view !== 'dispatch' && (
               <>
@@ -160,10 +160,10 @@ export default async function FeedPage({ searchParams }: { searchParams: Params 
         <div className={`container-rig ${view === 'all' ? 'grid gap-10 lg:grid-cols-[1fr_340px]' : ''}`}>
           {view !== 'dispatch' && (
             <div>
-              <h2 className="text-lg font-semibold text-rig-navy">Completed jobs</h2>
+              <h2 className="text-lg font-semibold text-rig-navy">Highlighted jobs</h2>
               {completed.length === 0 ? (
                 <p className="mt-3 text-sm text-rig-navy/60">
-                  Completed-job posts appear here after a RIG dispatcher reviews the write-up and photos. Check
+                  Highlighted jobs appear here after a RIG dispatcher reviews the write-up and photos. Check
                   back soon.
                 </p>
               ) : card === 'row' ? (

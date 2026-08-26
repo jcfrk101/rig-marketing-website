@@ -30,6 +30,7 @@ interface Params {
   city?: string
   view?: string
   card?: string
+  page?: string
 }
 
 // Preserves the current view/format when switching state or city, so the
@@ -40,6 +41,7 @@ function hrefFor(p: Params): string {
   if (p.city) qs.set('city', p.city.toLowerCase())
   if (p.view && p.view !== 'all') qs.set('view', p.view)
   if (p.card && p.card !== 'grid') qs.set('card', p.card)
+  if (p.page && p.page !== '1') qs.set('page', p.page)
   const s = qs.toString()
   return s ? `/feed?${s}` : '/feed'
 }
@@ -49,7 +51,7 @@ export default async function FeedPage({ searchParams }: { searchParams: Params 
   const city = normCity(searchParams.city)
   const view = searchParams.view === 'dispatch' || searchParams.view === 'completed' ? searchParams.view : 'all'
   const card = searchParams.card === 'row' ? 'row' : 'grid'
-  const here: Params = { state: state || undefined, city: city || undefined, view, card }
+  const here: Params = { state: state || undefined, city: city || undefined, view, card, page: searchParams.page }
 
   // Completed posts and request rows are fetched separately: requests
   // outnumber completed jobs ~20:1, so one date-sorted list buries every
@@ -62,7 +64,17 @@ export default async function FeedPage({ searchParams }: { searchParams: Params 
   ])
   const stateItems = [...completedItems, ...requestedItems]
   const items = city ? stateItems.filter((i) => normCity(i.city) === city) : stateItems
-  const completed = items.filter((i) => i.type === 'JOB_COMPLETED')
+  // The national view is a feed, not an archive: highlighted jobs older than
+  // 30 days age out here and get paginated. State/city views keep the full
+  // list — those pages want depth of local content.
+  const PAGE_SIZE = 12
+  const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400
+  const completedAll = items
+    .filter((i) => i.type === 'JOB_COMPLETED')
+    .filter((i) => state || city || !i.event_at_epoch || i.event_at_epoch >= cutoff)
+  const totalPages = state || city ? 1 : Math.max(1, Math.ceil(completedAll.length / PAGE_SIZE))
+  const pageNum = Math.min(Math.max(parseInt(searchParams.page || '1', 10) || 1, 1), totalPages)
+  const completed = state || city ? completedAll : completedAll.slice((pageNum - 1) * PAGE_SIZE, pageNum * PAGE_SIZE)
   const requested = items
     .filter((i) => i.type === 'JOB_REQUESTED')
     .slice(0, view === 'dispatch' ? 50 : 15)
@@ -178,6 +190,23 @@ export default async function FeedPage({ searchParams }: { searchParams: Params 
                     <CompletedCard key={i.item_id} item={i} />
                   ))}
                 </div>
+              )}
+              {totalPages > 1 && (
+                <nav className="mt-6 flex items-center gap-3 text-sm" aria-label="Highlighted jobs pages">
+                  {pageNum > 1 && (
+                    <Link href={hrefFor({ ...here, page: String(pageNum - 1) })} className="font-semibold text-rig-navy">
+                      ← Newer
+                    </Link>
+                  )}
+                  <span className="text-rig-navy/60">
+                    Page {pageNum} of {totalPages}
+                  </span>
+                  {pageNum < totalPages && (
+                    <Link href={hrefFor({ ...here, page: String(pageNum + 1) })} className="font-semibold text-rig-navy">
+                      Older →
+                    </Link>
+                  )}
+                </nav>
               )}
             </div>
           )}

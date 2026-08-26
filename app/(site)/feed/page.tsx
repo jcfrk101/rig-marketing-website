@@ -65,16 +65,20 @@ export default async function FeedPage({ searchParams }: { searchParams: Params 
   const stateItems = [...completedItems, ...requestedItems]
   const items = city ? stateItems.filter((i) => normCity(i.city) === city) : stateItems
   // The national view is a feed, not an archive: highlighted jobs older than
-  // 30 days age out here and get paginated. State/city views keep the full
-  // list — those pages want depth of local content.
+  // 30 days age out and paginate freely. State/city views are closer to a
+  // photo album — capped at 4 pages (48 jobs, newest first) with dot
+  // navigation; older jobs simply age off the album.
   const PAGE_SIZE = 12
+  const MAX_LOCAL_PAGES = 4
+  const local = Boolean(state || city)
   const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400
-  const completedAll = items
+  let completedAll = items
     .filter((i) => i.type === 'JOB_COMPLETED')
-    .filter((i) => state || city || !i.event_at_epoch || i.event_at_epoch >= cutoff)
-  const totalPages = state || city ? 1 : Math.max(1, Math.ceil(completedAll.length / PAGE_SIZE))
+    .filter((i) => local || !i.event_at_epoch || i.event_at_epoch >= cutoff)
+  if (local) completedAll = completedAll.slice(0, PAGE_SIZE * MAX_LOCAL_PAGES)
+  const totalPages = Math.max(1, Math.ceil(completedAll.length / PAGE_SIZE))
   const pageNum = Math.min(Math.max(parseInt(searchParams.page || '1', 10) || 1, 1), totalPages)
-  const completed = state || city ? completedAll : completedAll.slice((pageNum - 1) * PAGE_SIZE, pageNum * PAGE_SIZE)
+  const completed = completedAll.slice((pageNum - 1) * PAGE_SIZE, pageNum * PAGE_SIZE)
   const requested = items
     .filter((i) => i.type === 'JOB_REQUESTED')
     .slice(0, view === 'dispatch' ? 50 : 15)
@@ -191,7 +195,7 @@ export default async function FeedPage({ searchParams }: { searchParams: Params 
                   ))}
                 </div>
               )}
-              {totalPages > 1 && (
+              {totalPages > 1 && !local && (
                 <nav className="mt-6 flex items-center gap-3 text-sm" aria-label="Highlighted jobs pages">
                   {pageNum > 1 && (
                     <Link href={hrefFor({ ...here, page: String(pageNum - 1) })} className="font-semibold text-rig-navy">
@@ -205,6 +209,34 @@ export default async function FeedPage({ searchParams }: { searchParams: Params 
                     <Link href={hrefFor({ ...here, page: String(pageNum + 1) })} className="font-semibold text-rig-navy">
                       Older →
                     </Link>
+                  )}
+                </nav>
+              )}
+              {totalPages > 1 && local && (
+                // Album-style pager: arrows + dots, max 4 pages by construction.
+                <nav className="mt-6 flex items-center justify-center gap-2.5" aria-label="Highlighted jobs pages">
+                  {pageNum > 1 ? (
+                    <Link href={hrefFor({ ...here, page: String(pageNum - 1) })} aria-label="Newer jobs" className="px-1 text-lg font-bold text-rig-navy">
+                      ‹
+                    </Link>
+                  ) : (
+                    <span className="px-1 text-lg font-bold text-rig-navy/20" aria-hidden>‹</span>
+                  )}
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <Link
+                      key={i}
+                      href={hrefFor({ ...here, page: String(i + 1) })}
+                      aria-label={`Page ${i + 1}`}
+                      aria-current={i + 1 === pageNum ? 'page' : undefined}
+                      className={`h-2.5 w-2.5 rounded-full ${i + 1 === pageNum ? 'bg-rig-navy' : 'bg-rig-navy/25 hover:bg-rig-navy/50'}`}
+                    />
+                  ))}
+                  {pageNum < totalPages ? (
+                    <Link href={hrefFor({ ...here, page: String(pageNum + 1) })} aria-label="Older jobs" className="px-1 text-lg font-bold text-rig-navy">
+                      ›
+                    </Link>
+                  ) : (
+                    <span className="px-1 text-lg font-bold text-rig-navy/20" aria-hidden>›</span>
                   )}
                 </nav>
               )}

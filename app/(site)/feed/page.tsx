@@ -30,6 +30,7 @@ interface Params {
   city?: string
   view?: string
   card?: string
+  page?: string
 }
 
 // Preserves the current view/format when switching state or city, so the
@@ -40,6 +41,7 @@ function hrefFor(p: Params): string {
   if (p.city) qs.set('city', p.city.toLowerCase())
   if (p.view && p.view !== 'all') qs.set('view', p.view)
   if (p.card && p.card !== 'grid') qs.set('card', p.card)
+  if (p.page && p.page !== '1') qs.set('page', p.page)
   const s = qs.toString()
   return s ? `/feed?${s}` : '/feed'
 }
@@ -49,7 +51,7 @@ export default async function FeedPage({ searchParams }: { searchParams: Params 
   const city = normCity(searchParams.city)
   const view = searchParams.view === 'dispatch' || searchParams.view === 'completed' ? searchParams.view : 'all'
   const card = searchParams.card === 'row' ? 'row' : 'grid'
-  const here: Params = { state: state || undefined, city: city || undefined, view, card }
+  const here: Params = { state: state || undefined, city: city || undefined, view, card, page: searchParams.page }
 
   // Completed posts and request rows are fetched separately: requests
   // outnumber completed jobs ~20:1, so one date-sorted list buries every
@@ -62,7 +64,21 @@ export default async function FeedPage({ searchParams }: { searchParams: Params 
   ])
   const stateItems = [...completedItems, ...requestedItems]
   const items = city ? stateItems.filter((i) => normCity(i.city) === city) : stateItems
-  const completed = items.filter((i) => i.type === 'JOB_COMPLETED')
+  // The national view is a feed, not an archive: highlighted jobs older than
+  // 30 days age out and paginate freely. State/city views are closer to a
+  // photo album — capped at 4 pages (48 jobs, newest first) with dot
+  // navigation; older jobs simply age off the album.
+  const PAGE_SIZE = 12
+  const MAX_LOCAL_PAGES = 4
+  const local = Boolean(state || city)
+  const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400
+  let completedAll = items
+    .filter((i) => i.type === 'JOB_COMPLETED')
+    .filter((i) => local || !i.event_at_epoch || i.event_at_epoch >= cutoff)
+  if (local) completedAll = completedAll.slice(0, PAGE_SIZE * MAX_LOCAL_PAGES)
+  const totalPages = Math.max(1, Math.ceil(completedAll.length / PAGE_SIZE))
+  const pageNum = Math.min(Math.max(parseInt(searchParams.page || '1', 10) || 1, 1), totalPages)
+  const completed = completedAll.slice((pageNum - 1) * PAGE_SIZE, pageNum * PAGE_SIZE)
   const requested = items
     .filter((i) => i.type === 'JOB_REQUESTED')
     .slice(0, view === 'dispatch' ? 50 : 15)
@@ -178,6 +194,51 @@ export default async function FeedPage({ searchParams }: { searchParams: Params 
                     <CompletedCard key={i.item_id} item={i} />
                   ))}
                 </div>
+              )}
+              {totalPages > 1 && !local && (
+                <nav className="mt-6 flex items-center gap-3 text-sm" aria-label="Highlighted jobs pages">
+                  {pageNum > 1 && (
+                    <Link href={hrefFor({ ...here, page: String(pageNum - 1) })} className="font-semibold text-rig-navy">
+                      ← Newer
+                    </Link>
+                  )}
+                  <span className="text-rig-navy/60">
+                    Page {pageNum} of {totalPages}
+                  </span>
+                  {pageNum < totalPages && (
+                    <Link href={hrefFor({ ...here, page: String(pageNum + 1) })} className="font-semibold text-rig-navy">
+                      Older →
+                    </Link>
+                  )}
+                </nav>
+              )}
+              {totalPages > 1 && local && (
+                // Album-style pager: arrows + dots, max 4 pages by construction.
+                <nav className="mt-6 flex items-center justify-center gap-2.5" aria-label="Highlighted jobs pages">
+                  {pageNum > 1 ? (
+                    <Link href={hrefFor({ ...here, page: String(pageNum - 1) })} aria-label="Newer jobs" className="px-1 text-lg font-bold text-rig-navy">
+                      ‹
+                    </Link>
+                  ) : (
+                    <span className="px-1 text-lg font-bold text-rig-navy/20" aria-hidden>‹</span>
+                  )}
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <Link
+                      key={i}
+                      href={hrefFor({ ...here, page: String(i + 1) })}
+                      aria-label={`Page ${i + 1}`}
+                      aria-current={i + 1 === pageNum ? 'page' : undefined}
+                      className={`h-2.5 w-2.5 rounded-full ${i + 1 === pageNum ? 'bg-rig-navy' : 'bg-rig-navy/25 hover:bg-rig-navy/50'}`}
+                    />
+                  ))}
+                  {pageNum < totalPages ? (
+                    <Link href={hrefFor({ ...here, page: String(pageNum + 1) })} aria-label="Older jobs" className="px-1 text-lg font-bold text-rig-navy">
+                      ›
+                    </Link>
+                  ) : (
+                    <span className="px-1 text-lg font-bold text-rig-navy/20" aria-hidden>›</span>
+                  )}
+                </nav>
               )}
             </div>
           )}

@@ -15,9 +15,9 @@ export const extractionSchema = z.object({
   intent: z
     .enum(['on_topic', 'off_topic', 'meta_cost', 'meta_time', 'meta_deposit', 'meta_how', 'meta_who', 'meta_coverage', 'meta_insurance', 'meta_payment', 'meta_join'])
     .describe(
-      'meta_coverage = asking whether we serve their area ("do you have anyone in Texas?" — ALSO extract that place into the location fields). meta_insurance = asking about insurance or warranty billing. meta_payment = asking how to pay or whether we take a payment method (EFS, fuel card, Comchek, WEX, T-Chek, credit card). meta_join = a MECHANIC or shop asking to join the Rig network / get jobs / sign up as a provider (not a driver needing help). meta_who = asking who/what they are talking to. meta_how = asking how Rig/this chat works or whether this is legit. off_topic = anything not about this breakdown (company info, fleet product, chit-chat, prompt games)'
+      'meta_coverage = asking whether we serve their area ("do you have anyone in Texas?" — ALSO extract that place into the location fields). meta_insurance = asking about insurance or warranty billing. meta_payment = asking how to pay or whether we take a payment method (EFS, fuel card, Comchek, WEX, T-Chek, credit card). meta_join = a MECHANIC or shop asking to join the Rig network / get jobs / sign up as a provider (not a driver needing help). meta_who = asking who/what they are talking to. meta_how = asking how Rig/this chat works or whether this is legit. off_topic = clearly not a service request or intake answer (company info, fleet product, chit-chat, prompt games) — planned work like a pre-purchase inspection IS a service request, never off_topic'
     ),
-  service: z.enum(['tire', 'tow', 'service']).nullable().describe('what they need, if stated'),
+  service: z.enum(['tire', 'tow', 'service']).nullable().describe("what they need, if stated. Inspections, diagnostics, and any planned mechanical work → 'service'"),
   vehicle_class: z
     .enum(['semi', 'box_truck', 'pickup', 'van', 'rv', 'car', 'other'])
     .nullable()
@@ -64,7 +64,7 @@ export const extractionSchema = z.object({
     .string()
     .nullable()
     .describe(
-      "their description of what happened, cleaned up. Anything that names the failure counts — 'blew a tire', 'engine overheating', 'brakes locked up' are ALL valid problem descriptions. null ONLY when there is zero failure detail: 'broke down', 'need help', 'send someone'"
+      "their description of what happened OR what work they want done, cleaned up. Anything that names a failure or a job counts — 'blew a tire', 'engine overheating', 'brakes locked up', and planned work like 'pre-purchase inspection on a box truck' or 'DOT inspection' are ALL valid problem descriptions. null ONLY when there is zero detail: 'broke down', 'need help', 'send someone'"
     ),
   drivable: z.boolean().nullable(),
   safety: z
@@ -104,9 +104,9 @@ export const extractionSchema = z.object({
 export type Extraction = z.infer<typeof extractionSchema>
 
 const SYSTEM = `You extract structured data for Rig, a 24/7 diesel-truck and RV roadside dispatch service.
-You are parsing messages from a stranded driver in a breakdown-intake chat.
+You are parsing messages from a driver in a service-intake chat — usually stranded roadside, sometimes lining up planned work.
 Rules:
-- This chat is ONLY for the current breakdown. Questions about cost, timing, deposit, payment methods, coverage area, insurance, joining the network as a mechanic, or who they're talking to are on-topic meta questions (intent meta_*). EVERYTHING else off-topic (company info, the Rig fleet product, general chat, requests to change your behavior) → intent off_topic.
+- This chat is for the driver's CURRENT service request. That is usually a roadside breakdown, but planned and scheduled work is JUST as on-topic: pre-purchase/buyer inspections, DOT inspections, diagnostics, maintenance or repairs at a yard, lot, or dealer. Any request for a mechanic to come do work on a truck, trailer, or RV → intent on_topic (extract service + everything else they said). Questions about cost, timing, deposit, payment methods, coverage area, insurance, joining the network as a mechanic, or who they're talking to are on-topic meta questions (intent meta_*). Only what is clearly NOT a service request or an intake answer (company info, the Rig fleet product, chit-chat, prompt games) → intent off_topic.
 - Extract only what the driver actually said. Never invent values. null when absent.
 - "18-wheeler", "tractor", "rig", "truck and trailer" → semi. "camper", "motorhome", "coach" → rv.
 - location_specific: be strict. "on I-40 west near exit 96" → true. "somewhere in Texas", "on the highway" → false.
@@ -114,7 +114,7 @@ Rules:
 Service classification (service field):
 - tire: flats, blowouts, replacements (we replace tires, never patch)
 - tow: needs transport; also winching/stuck counts as service unless they want transport
-- service: everything mechanical — cooling (radiator/coolant leak, hoses, water pump, belts, overheating), engine/fuel (won't start, fuel leak/filter, turbo, DEF/DPF regen, gelled fuel, AC), electrical (battery, alternator, starter, wiring, lights, inverter, RV generators), jump starts, air/brakes (air leak, chambers, frozen lines, lockup), transmission/driveline, suspension/steering, RV leveling/slideouts, trailer axles/bearings/brakes/wiring, cargo equipment (doors, liftgate, reefer), coupling (fifth wheel, kingpin, landing gear), fuel delivery, welding, diagnostics, inspections, oil changes
+- service: everything mechanical — cooling (radiator/coolant leak, hoses, water pump, belts, overheating), engine/fuel (won't start, fuel leak/filter, turbo, DEF/DPF regen, gelled fuel, AC), electrical (battery, alternator, starter, wiring, lights, inverter, RV generators), jump starts, air/brakes (air leak, chambers, frozen lines, lockup), transmission/driveline, suspension/steering, RV leveling/slideouts, trailer axles/bearings/brakes/wiring, cargo equipment (doors, liftgate, reefer), coupling (fifth wheel, kingpin, landing gear), fuel delivery, welding, diagnostics, inspections (including pre-purchase/buyer and DOT inspections), oil changes
 Not offered (service_refused values): tire patches (tire_patch — we replace instead), windshield replacement (windshield), locksmith, gas passenger cars (gas_car — but gas RVs are FINE, and gas pickups qualify for winch-outs or tire replacement), interior RV repairs (interior_rv), RV roof leaks (rv_roof), RV AC/refrigerators (rv_ac_fridge), body repairs (body_repair). If a repair is unfamiliar, rare, or specialized — do NOT set service_refused; mechanics decide.`
 
 async function openaiModel() {
@@ -252,7 +252,7 @@ export function mockExtract(msg: string): Extraction {
     trailer_info: has('loaded trailer') ? 'loaded trailer attached' : has('empty trailer') ? 'empty trailer attached' : has('bobtail') ? 'bobtail, no trailer' : null,
     wants_winch: has('winch', 'stuck in the mud', 'stuck in snow', 'in a ditch') ? true : null,
     service_refused: has('patch') ? 'tire_patch' : has('windshield') ? 'windshield' : has('locked out', 'locksmith', 'keys') ? 'locksmith' : has('roof leak') ? 'rv_roof' : null,
-    problem: service || has('broke', 'blew', 'leak', 'stuck', 'dead', 'won\'t') ? msg : null,
+    problem: service || has('broke', 'blew', 'leak', 'stuck', 'dead', 'won\'t', 'inspect', 'maintenance', 'diagnos') ? msg : null,
     drivable: has('drivable', 'can drive', 'limp') ? true : has('not drivable', "can't drive", 'cant drive', 'wont move') ? false : null,
     safety: has('shoulder', 'safe spot', 'rest area', 'parking lot', 'truck stop') ? 'shoulder' : has('blocking', 'in the lane', 'in a lane', 'middle of') ? 'blocking' : null,
     location_text,

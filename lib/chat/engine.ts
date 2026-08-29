@@ -100,6 +100,8 @@ const META: Record<string, string> = {
   // Existing-job support has no separate channel yet — dispatch owns the job
   // record, so the dispatch line IS the support line. Keep this an easy out:
   // answer, don't gatekeep, don't loop them back into intake questions.
+  meta_spanish:
+    'Sí — llame a nuestra **línea en español: 1-855-560-2268**, disponible 24/7. Un despachador le ayudará con su camión o RV de inmediato. (For English, just keep typing here.)',
   meta_existing_job:
     "For anything about an **existing job** — status, changes, billing, refunds, or a callback — call dispatch at **1-855-744-2223** and they'll pull up your job right away. This chat can only start a *new* service request.",
   meta_payment:

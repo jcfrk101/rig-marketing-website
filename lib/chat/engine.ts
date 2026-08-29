@@ -97,6 +97,11 @@ const META: Record<string, string> = {
   meta_who:
     "Honest answer: I'm an AI chat bot 🤖 — but I'm just the intake. Once I've got the important details, a **human dispatcher** takes over and routes your request to several mechanics close to you. The robot part is only so you get help faster at 2am.",
   meta_coverage: 'Yes — **we have mechanics wherever you need them**, nationwide.',
+  // Existing-job support has no separate channel yet — dispatch owns the job
+  // record, so the dispatch line IS the support line. Keep this an easy out:
+  // answer, don't gatekeep, don't loop them back into intake questions.
+  meta_existing_job:
+    "For anything about an **existing job** — status, changes, billing, refunds, or a callback — call dispatch at **1-855-744-2223** and they'll pull up your job right away. This chat can only start a *new* service request.",
   meta_payment:
     'We take **EFS Payments**, WEX Express Codes, T-Chek, and credit cards — payment settles through Rig only after the work is done.',
   meta_join:
@@ -835,6 +840,19 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
     const e = await extract(req.message, contextLine(s, activeBefore))
     if (e.intent === 'off_topic') {
       replies.push(REDIRECT)
+      // Structured miss log — every REDIRECT is either a truly off-topic
+      // message or OUR misread of a real one. Lands in Cloud Logging as
+      // evt=chat_miss; scripts/chat-miss-report.mjs aggregates the patterns
+      // so misreads get found and fixed (this is how the pre-purchase
+      // inspection and existing-job gaps were caught).
+      console.log(
+        JSON.stringify({
+          evt: 'chat_miss',
+          conversationId: s.conversationId,
+          slot: activeBefore ?? null,
+          text: req.message.slice(0, 300),
+        })
+      )
       // Even a misclassified message can carry facts — capture silently so an
       // extractor misfire never drops data on the floor.
       mergeExtraction(s, e, req.message)

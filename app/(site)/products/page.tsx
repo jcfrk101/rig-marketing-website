@@ -3,9 +3,10 @@ import AudienceHero from '@/components/AudienceHero'
 import { products as c } from '@/data/pages'
 
 export const metadata: Metadata = {
-  title: 'Rig Products — Repair dispatch, fleet maintenance, driver & mechanic apps',
+  title: 'Products — 24/7 Repair Dispatch, Fleet Maintenance, Driver & Mechanic Apps',
   description:
-    'One network for truck repair: 24/7 repair dispatch, the Rig Fleet maintenance platform, and apps for drivers and mechanics.',
+    'One network for truck repair: 24/7 repair dispatch, the RIG Fleet maintenance platform, and apps for drivers and mechanics.',
+  alternates: { canonical: '/products' },
 }
 
 export default function ProductsPage() {

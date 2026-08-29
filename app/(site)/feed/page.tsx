@@ -15,9 +15,11 @@ import { CompletedCard, CompletedRow, RequestedRow } from '@/components/feed/Fee
 //   &view=completed      completed only, full width
 //   &card=row            compact shop-app-style cards instead of the grid
 export const metadata: Metadata = {
-  title: 'Recent Work — Mobile Truck, Trailer & RV Repair Across the U.S. | RIG',
+  // Brand comes from the root title template ("%s | RIG").
+  title: 'Recent Work — Mobile Truck, Trailer & RV Repair Across the U.S.',
   description:
     'A live feed of roadside and mobile repair jobs dispatched and completed through the RIG mechanic network — real trucks, real fixes, city by city.',
+  alternates: { canonical: '/feed' },
 }
 
 export const revalidate = 300

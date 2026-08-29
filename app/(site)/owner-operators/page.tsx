@@ -7,9 +7,10 @@ import AppCTA from '@/components/AppCTA'
 import { ownerOperators as c } from '@/data/pages'
 
 export const metadata: Metadata = {
-  title: 'Rig for Owner-Operators — We get you back on the road',
+  title: 'Owner-Operators — 24/7 Breakdown Help That Gets You Back on the Road',
   description:
-    'Rig connects short and long haul truck drivers with a nationwide network of reputable mechanics, wherever and whenever you need.',
+    'RIG connects short and long haul truck drivers with a nationwide network of reputable mobile diesel mechanics, wherever and whenever you break down.',
+  alternates: { canonical: '/owner-operators' },
 }
 
 export default function OwnerOperatorsPage() {

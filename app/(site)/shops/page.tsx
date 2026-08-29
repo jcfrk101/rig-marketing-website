@@ -6,9 +6,10 @@ import AppCTA from '@/components/AppCTA'
 import { shops as c } from '@/data/pages'
 
 export const metadata: Metadata = {
-  title: 'Rig for Shops & Mechanics — More jobs, less marketing',
+  title: 'Shops & Mechanics — More Truck Repair Jobs, Less Marketing',
   description:
-    'Rig connects a nationwide network of local mechanics to truck drivers across the nation — access clients without constant marketing.',
+    'RIG connects a nationwide network of local diesel mechanics to truck drivers across the nation — real breakdown jobs without constant marketing spend.',
+  alternates: { canonical: '/shops' },
 }
 
 export default function ShopsPage() {

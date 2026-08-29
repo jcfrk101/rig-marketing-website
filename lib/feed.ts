@@ -11,17 +11,19 @@ export interface FeedItem {
   event_at_epoch?: number | null
   description?: string | null
   photo_urls?: string[] | null
+  vehicle_category?: 'rv' | 'semi' | 'heavy_equipment' | 'consumer_diesel' | null
 }
 
 const API = process.env.RIG_API_URL || 'https://api.bigrig.app'
 
 export async function fetchFeed(
-  opts: { state?: string; service?: string; type?: FeedItem['type']; limit?: number } = {},
+  opts: { state?: string; service?: string; type?: FeedItem['type']; category?: string; limit?: number } = {},
 ): Promise<FeedItem[]> {
   const params = new URLSearchParams()
   if (opts.state) params.set('state', opts.state)
   if (opts.service) params.set('service', opts.service)
   if (opts.type) params.set('type', opts.type)
+  if (opts.category) params.set('category', opts.category)
   params.set('limit', String(opts.limit ?? 60))
   try {
     const res = await fetch(`${API}/feed/public?${params}`, { next: { revalidate: 300 } })

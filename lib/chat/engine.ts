@@ -398,7 +398,7 @@ export function summaryData(s: ChatState): Record<string, string> {
       ? { Tow: [s.tow.dropoff && `to ${s.tow.dropoff}`, s.tow.trailerInfo].filter(Boolean).join(' · ') || '—' }
       : {}),
     Location: s.location.resolved || s.location.text || '— (dispatcher will confirm by phone)',
-    Photos: s.photos ? `${s.photos}${s.photoSummary ? ` — ${s.photoSummary}` : ''}` : 'none',
+    Photos: s.photos ? `${s.photos} attached` : 'none',
     ...(s.photoNotes ? { Notes: s.photoNotes } : {}),
     Phone: (s.phone.number || '—') + (s.phone.verified ? ' ✓ verified' : ''),
     ...(computeFlags(s).length ? { Flags: computeFlags(s).join(', ') } : {}),
@@ -756,18 +756,26 @@ export async function runTurn(req: TurnRequest): Promise<TurnResponse> {
       s.vehicle.vin = vin!.replace(/[^a-z0-9]/gi, '').toUpperCase()
     }
     s.photoSummary = s.photoItems.map((p) => p.desc).join('; ') || null
-    const anyUseful = analyses.some((a) => a.useful)
-    const readout = analyses
-      .filter((a) => a.useful)
-      .map((a) => a.description)
-      .join('; ')
-    const vinLine = decoded
-      ? ` I read the VIN too — that's a ${[decoded.year, decoded.make, decoded.model].filter(Boolean).join(' ')}.`
-      : ''
+    // The vision readout stays INTERNAL — it rides photoSummary to the
+    // dispatcher and mechanics, but we don't recite our guess at the problem
+    // back to the driver (close-but-imperfect descriptions distract more than
+    // they help). Numbers are the exception: a tire size or VIN read off a
+    // photo is worth confirming out loud because a misread there changes what
+    // the mechanic brings.
+    const confirmations: string[] = []
+    if (tireSize) confirmations.push(`tire size reads **${tireSize}**`)
+    if (decoded) {
+      const v = [decoded.year, decoded.make, decoded.model].filter(Boolean).join(' ')
+      if (v) confirmations.push(`the VIN reads back as a **${v}**`)
+    }
     replies.push(
-      anyUseful
-        ? `From your photo${n > 1 ? 's' : ''}, here's what I can see: **${readout}**${tireSize ? ` — tire size reads ${tireSize}` : ''}.${vinLine} Did I get that right?`
-        : `Honestly, I couldn't make much of ${n > 1 ? 'those' : 'that'} — ${analyses[0].description}. ${n > 1 ? "They'll" : "It'll"} still go to the dispatcher. Anything to add?`
+      confirmations.length
+        ? `Got ${n > 1 ? 'them' : 'it'} — ${confirmations.join(', and ')}. **Did I get that right?** ${
+            n > 1 ? 'They go' : 'It goes'
+          } straight to the dispatcher and mechanics with your request.`
+        : `Got ${n > 1 ? 'them' : 'it'} — ${
+            n > 1 ? 'they go' : 'it goes'
+          } straight to the dispatcher and mechanics with your request. Anything to add?`
     )
     return {
       replies,
